@@ -1,4 +1,6 @@
 from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.agents.decision_agent import evaluate_patient
 from app.agents.ingestion_agent import extract_patient_data
@@ -7,6 +9,12 @@ from app.pdf_utils import extract_text_from_pdf
 from app.storage import get_record, save_record
 
 app = FastAPI(title="NeoCortex AI")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+
+@app.get("/")
+async def index() -> FileResponse:
+    return FileResponse("app/static/index.html")
 
 
 @app.post("/ingest/pdf", response_model=PatientRecord)

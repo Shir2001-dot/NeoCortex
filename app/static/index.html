@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NeoCortex AI</title>
+    <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+    <header>
+        <h1>NeoCortex AI</h1>
+        <p>נאוקורטקס דיגיטלי לקבלת החלטות קליניות אוטונומיות</p>
+    </header>
+
+    <main>
+        <section class="card">
+            <h2>1. קליטת מטופל</h2>
+            <label for="patient-id">מזהה מטופל</label>
+            <input type="text" id="patient-id" value="demo-001" />
+
+            <label for="raw-text">טקסט רפואי (הפניה / סיכום)</label>
+            <textarea id="raw-text" placeholder="הדבק/י כאן טקסט רפואי חופשי..."></textarea>
+
+            <button id="ingest-btn">חלץ נתוני מטופל</button>
+            <div class="status" id="ingest-status"></div>
+        </section>
+
+        <section class="card hidden" id="record-card">
+            <h2>2. רשומת מטופל מבונה</h2>
+            <div id="record-content"></div>
+            <button id="decision-btn" class="secondary">הרץ סוכן החלטות</button>
+            <div class="status" id="decision-status"></div>
+        </section>
+
+        <section class="card hidden" id="decision-card">
+            <h2>3. תוצאות סוכן ההחלטות</h2>
+            <div id="decision-content"></div>
+        </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

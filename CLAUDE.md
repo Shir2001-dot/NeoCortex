@@ -62,6 +62,9 @@ manually in the Render dashboard (not stored in the blueprint).
   to a local SQLite file (`neocortex.db`) for dev. Still not HIPAA-suitable
   on its own (no encryption/access control layer).
 - `app/pdf_utils.py` - PDF text extraction via `pdfplumber`.
+- `app/static/` - minimal vanilla HTML/JS/CSS frontend (RTL Hebrew), served by
+  FastAPI at `/` and `/static/*`. Lets a user paste medical text, view the
+  extracted `PatientRecord`, then run the decision agent and view its result.
 
 ## Data flow
 
