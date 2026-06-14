@@ -1,8 +1,8 @@
-import json
 import os
 
 from anthropic import Anthropic
 
+from app.agents.json_utils import parse_json_response
 from app.models import DecisionResult, PatientRecord
 
 MODEL = "claude-sonnet-4-6"
@@ -47,6 +47,6 @@ def evaluate_patient(record: PatientRecord) -> DecisionResult:
         ],
     )
 
-    result = json.loads(response.content[0].text)
+    result = parse_json_response(response.content[0].text)
 
     return DecisionResult(patient_id=record.patient_id, **result)

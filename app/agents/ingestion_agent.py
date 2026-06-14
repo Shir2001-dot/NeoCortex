@@ -1,8 +1,8 @@
-import json
 import os
 
 from anthropic import Anthropic
 
+from app.agents.json_utils import parse_json_response
 from app.models import PatientRecord
 
 MODEL = "claude-sonnet-4-6"
@@ -55,7 +55,7 @@ def extract_patient_data(patient_id: str, raw_text: str, source: str) -> Patient
         messages=[{"role": "user", "content": raw_text}],
     )
 
-    extracted = json.loads(response.content[0].text)
+    extracted = parse_json_response(response.content[0].text)
 
     return PatientRecord(
         patient_id=patient_id,
