@@ -1,10 +1,16 @@
+import os
+
 from sqlalchemy import JSON, Column, DateTime, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.models import PatientRecord
 
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///neocortex.db")
+
+connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+
 Base = declarative_base()
-engine = create_engine("sqlite:///neocortex.db", connect_args={"check_same_thread": False})
+engine = create_engine(DATABASE_URL, connect_args=connect_args)
 SessionLocal = sessionmaker(bind=engine)
 
 

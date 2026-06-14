@@ -49,10 +49,11 @@ There is no test suite, linter, or build step configured yet.
 - `app/models.py` - Pydantic schemas shared across the app: `PatientRecord`
   (the structured clinical record produced by ingestion), `VitalSigns`,
   `LabResult`, and `DecisionResult` (output of the decision agent).
-- `app/storage.py` - persistence layer. Currently SQLite via SQLAlchemy
-  (`neocortex.db`), storing each `PatientRecord` as a JSON blob keyed by
-  `patient_id`. This is explicitly a dev/pilot setup, not production-grade
-  (no encryption, single file, not HIPAA-suitable for real patient data).
+- `app/storage.py` - persistence layer via SQLAlchemy, storing each
+  `PatientRecord` as a JSON blob keyed by `patient_id`. Uses `DATABASE_URL`
+  env var if set (intended: PostgreSQL in production), otherwise falls back
+  to a local SQLite file (`neocortex.db`) for dev. Still not HIPAA-suitable
+  on its own (no encryption/access control layer).
 - `app/pdf_utils.py` - PDF text extraction via `pdfplumber`.
 
 ## Data flow

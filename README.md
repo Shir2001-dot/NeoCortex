@@ -49,6 +49,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 export ANTHROPIC_API_KEY=sk-...
+export DATABASE_URL=postgresql://user:password@localhost:5432/neocortex  # אופציונלי, ברירת מחדל: SQLite מקומי
 uvicorn app.main:app --reload
 ```
 
