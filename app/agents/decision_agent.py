@@ -1,0 +1,52 @@
+import json
+import os
+
+from anthropic import Anthropic
+
+from app.models import DecisionResult, PatientRecord
+
+MODEL = "claude-sonnet-4-6"
+
+SYSTEM_PROMPT = """\
+You are a clinical decision-support assistant. Given a structured patient record, \
+identify triage flags, suggest a differential diagnosis, and recommend next \
+actions for the medical team. You support clinicians - you do not replace them.
+
+Respond with ONLY a JSON object matching this shape:
+
+{
+  "flags": [{"severity": "info" | "warning" | "critical", "message": string}],
+  "differential_diagnosis": string[],
+  "recommended_actions": string[],
+  "summary": string
+}
+
+Do not include any explanation or markdown formatting, only the raw JSON object.
+"""
+
+
+def _get_client() -> Anthropic:
+    return Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+
+
+def evaluate_patient(record: PatientRecord) -> DecisionResult:
+    """Run the decision agent over a structured patient record."""
+    client = _get_client()
+
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=2048,
+        system=SYSTEM_PROMPT,
+        messages=[
+            {
+                "role": "user",
+                "content": record.model_dump_json(
+                    exclude={"raw_text", "created_at"}
+                ),
+            }
+        ],
+    )
+
+    result = json.loads(response.content[0].text)
+
+    return DecisionResult(patient_id=record.patient_id, **result)

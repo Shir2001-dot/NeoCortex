@@ -32,4 +32,36 @@
 * AI & NLP: Claude 3 Opus / Claude 3.5 Sonnet (לניתוח קליני מורכב ואבחנה מבדלת), BioBERT
 * Audio Processing: OpenAI Whisper (לשמיעת המפגש הרפואי בזמן אמת)
 * Database: Vector DB (ChromaDB / Pinecone) + PostgreSQL לניהול תיקים רפואיים מאובטחים
-.
+
+---
+
+## MVP נוכחי
+
+שלד פרויקט ראשוני (FastAPI) הכולל שני סוכנים:
+
+* **סוכן קליטה (Ingestion Agent)** – מקבל PDF או טקסט חופשי (הפניה/סיכום רפואי), ומחלץ ממנו רשומת מטופל מבונה (`PatientRecord`): תלונה עיקרית, תסמינים, היסטוריה רפואית, תרופות, אלרגיות, תוצאות מעבדה וסטטוס.
+* **סוכן החלטות (Decision Agent)** – מקבל רשומת מטופל מבונה ומפיק דגלי טריאז', אבחנה מבדלת והמלצות לפעולה.
+
+### הרצה מקומית
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+export ANTHROPIC_API_KEY=sk-...
+uvicorn app.main:app --reload
+```
+
+### Endpoints
+
+* `POST /ingest/pdf?patient_id=...` (multipart file upload) – קליטת PDF רפואי
+* `POST /ingest/text` – קליטת טקסט חופשי (`{"patient_id": "...", "text": "..."}`)
+* `GET /patients/{patient_id}` – שליפת רשומת מטופל מבונה
+* `POST /decision/{patient_id}` – הרצת סוכן ההחלטות על רשומת מטופל קיימת
+
+### תכניות עתידיות
+
+* חיבור חיישנים לבישים (שעון חכם / צמיד) לקליטת נתונים בזמן אמת (קצב לב, סטורציה וכו')
+* תיעוד קליני סביבתי (Whisper) להפקת סיכומים משיחות
+* אינטגרציה עם Vector DB להצלבת היסטוריה רפואית ומחקר קליני
+
