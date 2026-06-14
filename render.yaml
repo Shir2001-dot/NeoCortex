@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: neocortex-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: neocortex-db
+          property: connectionString
+
+databases:
+  - name: neocortex-db
+    plan: free

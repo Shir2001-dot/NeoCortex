@@ -37,6 +37,13 @@ uvicorn app.main:app --reload
 
 There is no test suite, linter, or build step configured yet.
 
+## Deployment
+
+`render.yaml` defines a Render Blueprint: a Python web service running
+`uvicorn app.main:app --host 0.0.0.0 --port $PORT` plus a managed PostgreSQL
+database, wired together via `DATABASE_URL`. `ANTHROPIC_API_KEY` must be set
+manually in the Render dashboard (not stored in the blueprint).
+
 ## Architecture
 
 - `app/main.py` - FastAPI app and HTTP routes:

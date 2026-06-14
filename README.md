@@ -60,6 +60,14 @@ uvicorn app.main:app --reload
 * `GET /patients/{patient_id}` – שליפת רשומת מטופל מבונה
 * `POST /decision/{patient_id}` – הרצת סוכן ההחלטות על רשומת מטופל קיימת
 
+### פריסה ל-Render
+
+הפרויקט כולל `render.yaml` (Blueprint) המגדיר שירות Web (FastAPI) ומסד נתונים PostgreSQL מנוהל:
+
+1. ב-Render: **New → Blueprint**, ולחבר את הריפו הזה.
+2. Render ייצור אוטומטית את שירות ה-API ואת ה-PostgreSQL, ויחבר בין `DATABASE_URL` לשירות.
+3. יש להגדיר ידנית את משתנה הסביבה `ANTHROPIC_API_KEY` בלשונית Environment של השירות (לא נשמר ב-Blueprint מטעמי אבטחה).
+
 ### תכניות עתידיות
 
 * חיבור חיישנים לבישים (שעון חכם / צמיד) לקליטת נתונים בזמן אמת (קצב לב, סטורציה וכו')
