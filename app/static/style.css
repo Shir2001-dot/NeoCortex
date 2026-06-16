@@ -172,6 +172,17 @@ ul {
     color: var(--critical);
 }
 
+.disclaimer {
+    background: #fffbeb;
+    border: 1px solid #e0a100;
+    border-right: 4px solid #e0a100;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.88rem;
+    color: #78350f;
+    margin-bottom: 1rem;
+}
+
 .hidden {
     display: none;
 }

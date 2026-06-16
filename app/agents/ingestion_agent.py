@@ -11,6 +11,7 @@ SYSTEM_PROMPT = """\
 You are a clinical data extraction assistant. Given raw medical text (a referral \
 letter, discharge summary, or lab report), extract the relevant structured data.
 
+Always respond in the same language as the input text. \
 Respond with ONLY a JSON object matching this shape (omit fields you cannot find, \
 use null where appropriate):
 
