@@ -46,6 +46,11 @@ class IngestTextRequest(BaseModel):
     text: str
 
 
+class IngestPdfRequest(BaseModel):
+    patient_id: str
+    pdf_base64: str
+
+
 class VitalsUpdateRequest(BaseModel):
     heart_rate: Optional[float] = None
     blood_pressure_systolic: Optional[float] = None

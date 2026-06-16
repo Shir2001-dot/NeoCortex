@@ -91,9 +91,13 @@ async function doIngest() {
         if (currentTab === "pdf") {
             const file = document.getElementById("pdf-file").files[0];
             if (!file) throw new Error("נא לבחור קובץ PDF");
-            const form = new FormData();
-            form.append("file", file);
-            res = await fetch(`/ingest/pdf?patient_id=${encodeURIComponent(patientId)}`, { method: "POST", body: form });
+            const arrayBuffer = await file.arrayBuffer();
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+            res = await fetch("/ingest/pdf-base64", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ patient_id: patientId, pdf_base64: base64 }),
+            });
         } else {
             const text = document.getElementById("raw-text").value.trim();
             if (!text) throw new Error("נא להדביק טקסט רפואי");
