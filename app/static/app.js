@@ -1,16 +1,18 @@
-const ingestBtn = document.getElementById("ingest-btn");
+// ─── Elements ───
+const ingestBtn   = document.getElementById("ingest-btn");
 const decisionBtn = document.getElementById("decision-btn");
-const vitalsBtn = document.getElementById("vitals-btn");
-const ingestStatus = document.getElementById("ingest-status");
-const decisionStatus = document.getElementById("decision-status");
-const vitalsStatus = document.getElementById("vitals-status");
-const recordCard = document.getElementById("record-card");
-const recordContent = document.getElementById("record-content");
+const vitalsBtn   = document.getElementById("vitals-btn");
+const recordCard  = document.getElementById("record-card");
 const decisionCard = document.getElementById("decision-card");
+const recordContent = document.getElementById("record-content");
 const decisionContent = document.getElementById("decision-content");
 
 let currentPatientId = null;
 let currentTab = "text";
+
+// ─── Tab switch ───
+document.getElementById("tab-text").addEventListener("click", () => switchTab("text"));
+document.getElementById("tab-pdf").addEventListener("click",  () => switchTab("pdf"));
 
 function switchTab(tab) {
     currentTab = tab;
@@ -20,69 +22,113 @@ function switchTab(tab) {
     document.getElementById("tab-pdf").classList.toggle("active", tab === "pdf");
 }
 
+// ─── Stepper ───
+function setStep(n) {
+    [1,2,3].forEach(i => {
+        const el = document.getElementById("step" + i);
+        el.classList.remove("active","done");
+        if (i < n)  el.classList.add("done");
+        if (i === n) el.classList.add("active");
+    });
+}
+
+// ─── Helpers ───
+function esc(str) {
+    return String(str ?? "").replace(/[&<>"']/g, c =>
+        ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function setStatus(prefix, msg, type="") {
+    const el = document.getElementById(prefix + "-msg");
+    const sp = document.getElementById(prefix + "-spinner");
+    if (el) { el.textContent = msg; el.className = type; }
+    if (sp) sp.classList.toggle("visible", type === "loading");
+}
+
 function tagList(items) {
-    if (!items || items.length === 0) return "<span class='label'>אין נתונים</span>";
-    return `<div class="tag-list">${items.map((i) => `<span class="tag">${escapeHtml(i)}</span>`).join("")}</div>`;
+    if (!items?.length) return "<span style='color:var(--muted);font-size:.85rem'>אין נתונים</span>";
+    return `<div class="tag-list">${items.map(i=>`<span class="tag">${esc(i)}</span>`).join("")}</div>`;
 }
 
-function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-}
+// ─── Render patient record ───
+function renderRecord(r) {
+    const v = r.vitals || {};
+    const bp = v.blood_pressure_systolic && v.blood_pressure_diastolic
+        ? `${v.blood_pressure_systolic}/${v.blood_pressure_diastolic}`
+        : "—";
 
-function field(label, value) {
-    return `<div class="field"><div class="label">${label}</div><div>${escapeHtml(value ?? "—")}</div></div>`;
-}
-
-function populateVitalsForm(vitals) {
-    if (!vitals) return;
-    if (vitals.heart_rate) document.getElementById("v-hr").value = vitals.heart_rate;
-    if (vitals.blood_pressure_systolic) document.getElementById("v-sys").value = vitals.blood_pressure_systolic;
-    if (vitals.blood_pressure_diastolic) document.getElementById("v-dia").value = vitals.blood_pressure_diastolic;
-    if (vitals.temperature_celsius) document.getElementById("v-temp").value = vitals.temperature_celsius;
-    if (vitals.spo2_percent) document.getElementById("v-spo2").value = vitals.spo2_percent;
-    if (vitals.respiratory_rate) document.getElementById("v-rr").value = vitals.respiratory_rate;
-}
-
-function renderRecord(record) {
-    const vitals = record.vitals || {};
     recordContent.innerHTML = `
-        <div class="field-grid">
-            ${field("שם מלא", record.full_name)}
-            ${field("תאריך לידה", record.date_of_birth)}
-            ${field("מגדר", record.gender)}
-            ${field("דופק", vitals.heart_rate)}
-            ${field("ל\"ד", vitals.blood_pressure_systolic && vitals.blood_pressure_diastolic ? `${vitals.blood_pressure_systolic}/${vitals.blood_pressure_diastolic}` : null)}
-            ${field("סטורציה", vitals.spo2_percent ? `${vitals.spo2_percent}%` : null)}
+        <div class="info-grid">
+            ${infoCell("שם מלא", r.full_name)}
+            ${infoCell("תאריך לידה", r.date_of_birth)}
+            ${infoCell("מגדר", r.gender)}
+            ${infoCell("דופק", v.heart_rate ? v.heart_rate + " bpm" : null)}
+            ${infoCell('ל"ד', bp)}
+            ${infoCell("סטורציה", v.spo2_percent ? v.spo2_percent + "%" : null)}
         </div>
-        <div class="field"><div class="label">תלונה עיקרית</div><div>${escapeHtml(record.chief_complaint ?? "—")}</div></div>
-        <div class="field"><div class="label">תסמינים</div>${tagList(record.symptoms)}</div>
-        <div class="field"><div class="label">היסטוריה רפואית</div>${tagList(record.medical_history)}</div>
-        <div class="field"><div class="label">תרופות</div>${tagList(record.medications)}</div>
-        <div class="field"><div class="label">אלרגיות</div>${tagList(record.allergies)}</div>
+        <div class="section-title">תלונה עיקרית</div>
+        <p style="font-size:.9rem;margin-bottom:.75rem">${esc(r.chief_complaint)}</p>
+        <div class="section-title">תסמינים</div>
+        ${tagList(r.symptoms)}
+        <div class="section-title">היסטוריה רפואית</div>
+        ${tagList(r.medical_history)}
+        <div class="section-title">תרופות</div>
+        ${tagList(r.medications)}
+        <div class="section-title">אלרגיות</div>
+        ${tagList(r.allergies)}
     `;
-    populateVitalsForm(record.vitals);
+    populateVitals(r.vitals);
 }
 
+function infoCell(lbl, val) {
+    return `<div class="info-cell"><div class="lbl">${lbl}</div><div class="val">${esc(val) || "—"}</div></div>`;
+}
+
+function populateVitals(v) {
+    if (!v) return;
+    if (v.heart_rate)               document.getElementById("v-hr").value   = v.heart_rate;
+    if (v.blood_pressure_systolic)  document.getElementById("v-sys").value  = v.blood_pressure_systolic;
+    if (v.blood_pressure_diastolic) document.getElementById("v-dia").value  = v.blood_pressure_diastolic;
+    if (v.temperature_celsius)      document.getElementById("v-temp").value = v.temperature_celsius;
+    if (v.spo2_percent)             document.getElementById("v-spo2").value = v.spo2_percent;
+    if (v.respiratory_rate)         document.getElementById("v-rr").value   = v.respiratory_rate;
+}
+
+// ─── Render decision ───
 function renderDecision(result) {
-    const flagsHtml = (result.flags || [])
-        .map((f) => `<div class="flag ${f.severity}"><span class="severity">${f.severity}</span>${escapeHtml(f.message)}</div>`)
-        .join("");
-    const listHtml = (items) => `<ul>${(items || []).map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul>`;
+    const flags = (result.flags || []).map(f => `
+        <div class="flag ${f.severity}">
+            <div class="flag-dot"></div>
+            <div class="flag-body">
+                <div class="flag-severity">${esc(f.severity)}</div>
+                <div class="flag-msg">${esc(f.message)}</div>
+            </div>
+        </div>`).join("");
+
+    const dxItems = (result.differential_diagnosis || [])
+        .map(d => `<li>${esc(d)}</li>`).join("");
+
+    const actionItems = (result.recommended_actions || [])
+        .map(a => `<li>${esc(a)}</li>`).join("");
 
     decisionContent.innerHTML = `
-        <div class="field"><div class="label">דגלים</div>${flagsHtml || "<span class='label'>אין דגלים</span>"}</div>
-        <div class="field"><div class="label">אבחנה מבדלת</div>${listHtml(result.differential_diagnosis)}</div>
-        <div class="field"><div class="label">המלצות פעולה</div>${listHtml(result.recommended_actions)}</div>
-        <div class="field"><div class="label">סיכום</div><div>${escapeHtml(result.summary ?? "—")}</div></div>
+        <div class="section-title">דגלים קליניים</div>
+        ${flags || "<p style='color:var(--muted);font-size:.88rem'>אין דגלים</p>"}
+        <div class="section-title" style="margin-top:1.25rem">אבחנה מבדלת</div>
+        <ul class="dx-list">${dxItems}</ul>
+        <div class="section-title" style="margin-top:1.25rem">המלצות פעולה</div>
+        <ul class="action-list">${actionItems}</ul>
+        <div class="section-title" style="margin-top:1.25rem">סיכום קליני</div>
+        <div class="summary-box">${esc(result.summary)}</div>
     `;
 }
 
-async function doIngest() {
+// ─── Ingest ───
+ingestBtn.addEventListener("click", async () => {
     const patientId = document.getElementById("patient-id").value.trim();
-    if (!patientId) { ingestStatus.textContent = "נא למלא מזהה מטופל"; ingestStatus.classList.add("error"); return; }
+    if (!patientId) { setStatus("ingest","נא למלא מזהה מטופל","error"); return; }
 
-    ingestStatus.classList.remove("error");
-    ingestStatus.textContent = "מעבד...";
+    setStatus("ingest","מעבד מסמך...","loading");
     ingestBtn.disabled = true;
     decisionCard.classList.add("hidden");
 
@@ -98,90 +144,84 @@ async function doIngest() {
             const base64 = btoa(binary);
             res = await fetch("/ingest/pdf-base64", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ patient_id: patientId, pdf_base64: base64 }),
+                headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({patient_id: patientId, pdf_base64: base64}),
             });
         } else {
             const text = document.getElementById("raw-text").value.trim();
             if (!text) throw new Error("נא להדביק טקסט רפואי");
-            res = await fetch("/ingest/text", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ patient_id: patientId, text }) });
+            res = await fetch("/ingest/text", {
+                method: "POST",
+                headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({patient_id: patientId, text}),
+            });
         }
 
-        if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `שגיאת שרת (${res.status})`);
+        }
+
         const record = await res.json();
         currentPatientId = record.patient_id;
         renderRecord(record);
         recordCard.classList.remove("hidden");
-        ingestStatus.textContent = "הופק בהצלחה ✓";
-    } catch (err) {
-        ingestStatus.textContent = `שגיאה: ${err.message}`;
-        ingestStatus.classList.add("error");
+        setStep(2);
+        setStatus("ingest","הופק בהצלחה ✓","success");
+    } catch (e) {
+        setStatus("ingest", e.message, "error");
     } finally {
         ingestBtn.disabled = false;
     }
-}
+});
 
-async function doUpdateVitals() {
+// ─── Vitals ───
+vitalsBtn.addEventListener("click", async () => {
     if (!currentPatientId) return;
-    vitalsStatus.classList.remove("error");
-    vitalsStatus.textContent = "שומר...";
+    setStatus("vitals","שומר...","loading");
     vitalsBtn.disabled = true;
 
     const body = {};
-    const hr = document.getElementById("v-hr").value;
-    const sys = document.getElementById("v-sys").value;
-    const dia = document.getElementById("v-dia").value;
-    const temp = document.getElementById("v-temp").value;
-    const spo2 = document.getElementById("v-spo2").value;
-    const rr = document.getElementById("v-rr").value;
-    if (hr) body.heart_rate = parseFloat(hr);
-    if (sys) body.blood_pressure_systolic = parseFloat(sys);
-    if (dia) body.blood_pressure_diastolic = parseFloat(dia);
-    if (temp) body.temperature_celsius = parseFloat(temp);
-    if (spo2) body.spo2_percent = parseFloat(spo2);
-    if (rr) body.respiratory_rate = parseFloat(rr);
+    const map = {hr:"heart_rate",sys:"blood_pressure_systolic",dia:"blood_pressure_diastolic",temp:"temperature_celsius",spo2:"spo2_percent",rr:"respiratory_rate"};
+    for (const [id, key] of Object.entries(map)) {
+        const v = document.getElementById("v-"+id).value;
+        if (v) body[key] = parseFloat(v);
+    }
 
     try {
         const res = await fetch(`/patients/${encodeURIComponent(currentPatientId)}/vitals`, {
             method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            headers: {"Content-Type":"application/json"},
             body: JSON.stringify(body),
         });
         if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
         const record = await res.json();
         renderRecord(record);
-        vitalsStatus.textContent = "מדדים עודכנו ✓";
-    } catch (err) {
-        vitalsStatus.textContent = `שגיאה: ${err.message}`;
-        vitalsStatus.classList.add("error");
+        setStatus("vitals","מדדים עודכנו ✓","success");
+    } catch (e) {
+        setStatus("vitals", e.message, "error");
     } finally {
         vitalsBtn.disabled = false;
     }
-}
+});
 
-async function doDecision() {
+// ─── Decision ───
+decisionBtn.addEventListener("click", async () => {
     if (!currentPatientId) return;
-    decisionStatus.classList.remove("error");
-    decisionStatus.textContent = "מריץ סוכן החלטות...";
+    setStatus("decision","מנתח נתונים קליניים...","loading");
     decisionBtn.disabled = true;
 
     try {
-        const res = await fetch(`/decision/${encodeURIComponent(currentPatientId)}`, { method: "POST" });
+        const res = await fetch(`/decision/${encodeURIComponent(currentPatientId)}`, {method:"POST"});
         if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
         const result = await res.json();
         renderDecision(result);
         decisionCard.classList.remove("hidden");
-        decisionStatus.textContent = "";
-    } catch (err) {
-        decisionStatus.textContent = `שגיאה: ${err.message}`;
-        decisionStatus.classList.add("error");
+        setStep(3);
+        setStatus("decision","","");
+    } catch (e) {
+        setStatus("decision", e.message, "error");
     } finally {
         decisionBtn.disabled = false;
     }
-}
-
-ingestBtn.addEventListener("click", doIngest);
-vitalsBtn.addEventListener("click", doUpdateVitals);
-decisionBtn.addEventListener("click", doDecision);
-document.getElementById("tab-text").addEventListener("click", () => switchTab("text"));
-document.getElementById("tab-pdf").addEventListener("click", () => switchTab("pdf"));
+});

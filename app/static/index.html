@@ -3,89 +3,130 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NeoCortex AI</title>
+    <title>NeoCortex AI – מערכת תמיכה קלינית</title>
     <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
-    <header>
-        <h1>NeoCortex AI</h1>
-        <p>נאוקורטקס דיגיטלי לקבלת החלטות קליניות אוטונומיות</p>
-    </header>
 
-    <main>
-        <section class="card">
-            <h2>1. קליטת מטופל</h2>
-            <label for="patient-id">מזהה מטופל</label>
-            <input type="text" id="patient-id" value="demo-001" />
+<header>
+    <div class="logo">
+        <div class="logo-icon">🧠</div>
+        <div>
+            <h1>NeoCortex AI</h1>
+            <p>מערכת תמיכה קלינית אוטונומית</p>
+        </div>
+    </div>
+    <div class="header-badge">Beta · קליני בלבד</div>
+</header>
+
+<main>
+
+    <!-- STEPPER -->
+    <div class="stepper">
+        <div class="step active" id="step1">
+            <div class="step-num">1</div>
+            <div class="step-label">קליטת מסמך</div>
+        </div>
+        <div class="step-divider"></div>
+        <div class="step" id="step2">
+            <div class="step-num">2</div>
+            <div class="step-label">אימות נתונים</div>
+        </div>
+        <div class="step-divider"></div>
+        <div class="step" id="step3">
+            <div class="step-num">3</div>
+            <div class="step-label">תוצאות קליניות</div>
+        </div>
+    </div>
+
+    <!-- STEP 1: INGEST -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon">📋</div>
+            <h2>קליטת מסמך רפואי</h2>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="patient-id">מזהה מטופל</label>
+                <input type="text" id="patient-id" value="demo-001" placeholder="לדוגמה: IL-2024-00123" />
+            </div>
 
             <div class="tab-group">
-                <button type="button" class="tab active" id="tab-text">טקסט חופשי</button>
-                <button type="button" class="tab" id="tab-pdf">העלאת PDF</button>
+                <button type="button" class="tab active" id="tab-text">✏️ טקסט חופשי</button>
+                <button type="button" class="tab" id="tab-pdf">📄 העלאת PDF</button>
             </div>
 
-            <div id="input-text">
-                <label for="raw-text">טקסט רפואי (הפניה / סיכום)</label>
-                <textarea id="raw-text" placeholder="הדבק/י כאן טקסט רפואי חופשי..."></textarea>
+            <div class="form-group" id="input-text">
+                <label for="raw-text">טקסט הפניה / סיכום קליני</label>
+                <textarea id="raw-text" placeholder="הדבק/י כאן טקסט רפואי חופשי – הפניה, סיכום אשפוז, ממצאים וכו'..."></textarea>
             </div>
 
-            <div id="input-pdf" class="hidden">
-                <label for="pdf-file">קובץ PDF רפואי</label>
+            <div class="form-group hidden" id="input-pdf">
+                <label for="pdf-file">קובץ PDF רפואי (כולל סרוקים)</label>
                 <input type="file" id="pdf-file" accept=".pdf" />
             </div>
 
-            <button id="ingest-btn">חלץ נתוני מטופל</button>
-            <div class="status" id="ingest-status"></div>
-        </section>
-
-        <section class="card hidden" id="record-card">
-            <h2>2. רשומת מטופל מבונה</h2>
-            <div id="record-content"></div>
-
-            <div class="vitals-edit">
-                <h3>עדכון מדדים ידני</h3>
-                <div class="vitals-grid">
-                    <div>
-                        <label>דופק (bpm)</label>
-                        <input type="number" id="v-hr" placeholder="לדוגמה: 80" />
-                    </div>
-                    <div>
-                        <label>ל"ד סיסטולי</label>
-                        <input type="number" id="v-sys" placeholder="לדוגמה: 120" />
-                    </div>
-                    <div>
-                        <label>ל"ד דיאסטולי</label>
-                        <input type="number" id="v-dia" placeholder="לדוגמה: 80" />
-                    </div>
-                    <div>
-                        <label>טמפרטורה (°C)</label>
-                        <input type="number" step="0.1" id="v-temp" placeholder="לדוגמה: 37.2" />
-                    </div>
-                    <div>
-                        <label>סטורציה (%)</label>
-                        <input type="number" id="v-spo2" placeholder="לדוגמה: 98" />
-                    </div>
-                    <div>
-                        <label>קצב נשימה</label>
-                        <input type="number" id="v-rr" placeholder="לדוגמה: 16" />
-                    </div>
+            <div class="actions-row">
+                <button type="button" class="btn btn-primary" id="ingest-btn">⚡ חלץ נתוני מטופל</button>
+                <div class="status" id="ingest-status">
+                    <div class="spinner" id="ingest-spinner"></div>
+                    <span id="ingest-msg"></span>
                 </div>
-                <button id="vitals-btn" class="outline">עדכן מדדים</button>
-                <div class="status" id="vitals-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP 2: RECORD + VITALS -->
+    <div class="card hidden" id="record-card">
+        <div class="card-header">
+            <div class="card-icon">👤</div>
+            <h2>רשומת מטופל מבונה</h2>
+        </div>
+        <div class="card-body">
+            <div class="info-grid" id="record-content"></div>
+
+            <div class="vitals-section">
+                <div class="vitals-section-title">📊 עדכון / אימות מדדים</div>
+                <div class="vitals-grid">
+                    <div><label>דופק (bpm)</label><input type="number" id="v-hr" placeholder="80" /></div>
+                    <div><label>ל"ד סיסטולי</label><input type="number" id="v-sys" placeholder="120" /></div>
+                    <div><label>ל"ד דיאסטולי</label><input type="number" id="v-dia" placeholder="80" /></div>
+                    <div><label>טמפרטורה (°C)</label><input type="number" step="0.1" id="v-temp" placeholder="37.0" /></div>
+                    <div><label>סטורציה (%)</label><input type="number" id="v-spo2" placeholder="98" /></div>
+                    <div><label>קצב נשימה</label><input type="number" id="v-rr" placeholder="16" /></div>
+                </div>
+                <div class="actions-row">
+                    <button type="button" class="btn btn-outline" id="vitals-btn">💾 שמור מדדים</button>
+                    <div class="status" id="vitals-status"><span id="vitals-msg"></span></div>
+                </div>
             </div>
 
-            <button id="decision-btn" class="secondary">הרץ סוכן החלטות</button>
-            <div class="status" id="decision-status"></div>
-        </section>
+            <div class="actions-row">
+                <button type="button" class="btn btn-secondary" id="decision-btn">🔍 הרץ ניתוח קליני</button>
+                <div class="status" id="decision-status">
+                    <div class="spinner" id="decision-spinner"></div>
+                    <span id="decision-msg"></span>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <section class="card hidden" id="decision-card">
-            <h2>3. תוצאות סוכן ההחלטות</h2>
+    <!-- STEP 3: DECISION -->
+    <div class="card hidden" id="decision-card">
+        <div class="card-header">
+            <div class="card-icon">🩺</div>
+            <h2>תוצאות ניתוח קליני</h2>
+        </div>
+        <div class="card-body">
             <div class="disclaimer">
-                ⚕️ <strong>הצהרת אחריות רפואית:</strong> המידע המוצג כאן הוא כלי תמיכה בהחלטה בלבד ואינו מהווה אבחנה רפואית. כל החלטה קלינית טעונה אישור רופא מוסמך שבחן את המטופל. אין להסתמך על המערכת כתחליף לשיקול דעת קליני.
+                ⚕️ <strong>הצהרת אחריות רפואית:</strong> מערכת זו מהווה כלי תמיכה בהחלטה בלבד ואינה מחליפה שיקול דעת קליני של רופא מוסמך. כל המלצה טעונה אישור רפואי מלא לפני יישום.
             </div>
             <div id="decision-content"></div>
-        </section>
-    </main>
+        </div>
+    </div>
 
-    <script src="/static/app.js"></script>
+</main>
+
+<script src="/static/app.js"></script>
 </body>
 </html>
