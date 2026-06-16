@@ -50,10 +50,37 @@ header {
     gap: 0.75rem;
 }
 
-header p {
-    color: rgba(255,255,255,.7);
-    font-size: 0.78rem;
-    margin-top: 0.15rem;
+.logo-text {
+    position: relative;
+    line-height: 1;
+}
+
+.logo-neo {
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: white;
+}
+
+.logo-cortex {
+    font-size: 1.35rem;
+    font-weight: 300;
+    letter-spacing: 3px;
+    color: #7dd3fc;
+}
+
+.logo-wave {
+    height: 2px;
+    background: linear-gradient(to left, transparent, #00d4ff 40%, transparent);
+    border-radius: 999px;
+    margin-top: 3px;
+}
+
+.logo-sub {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,.55);
+    margin-top: 2px;
+    letter-spacing: 0.3px;
 }
 
 .header-badge {
