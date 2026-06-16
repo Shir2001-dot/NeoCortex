@@ -176,3 +176,5 @@ async function doDecision() {
 ingestBtn.addEventListener("click", doIngest);
 vitalsBtn.addEventListener("click", doUpdateVitals);
 decisionBtn.addEventListener("click", doDecision);
+document.getElementById("tab-text").addEventListener("click", () => switchTab("text"));
+document.getElementById("tab-pdf").addEventListener("click", () => switchTab("pdf"));
