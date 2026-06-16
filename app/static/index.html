@@ -10,11 +10,23 @@
 
 <header>
     <div class="logo">
-        <div class="logo-icon">🧠</div>
-        <div>
-            <h1>NeoCortex AI</h1>
-            <p>מערכת תמיכה קלינית אוטונומית</p>
-        </div>
+        <svg width="180" height="40" viewBox="0 0 180 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="textGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#a8c4d8"/>
+                    <stop offset="50%" stop-color="#ffffff"/>
+                    <stop offset="100%" stop-color="#6a9bb5"/>
+                </linearGradient>
+                <linearGradient id="waveGrad" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#00d4ff" stop-opacity="0"/>
+                    <stop offset="40%" stop-color="#00d4ff"/>
+                    <stop offset="100%" stop-color="#00d4ff" stop-opacity="0.2"/>
+                </linearGradient>
+            </defs>
+            <text x="0" y="28" font-family="-apple-system, 'Segoe UI', Arial, sans-serif"
+                  font-size="26" font-weight="700" letter-spacing="2" fill="url(#textGrad)">NEOCORTEX</text>
+            <path d="M 10 33 Q 60 18 100 30 Q 140 42 175 22" stroke="url(#waveGrad)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        </svg>
     </div>
     <div class="header-badge">Beta · קליני בלבד</div>
 </header>
