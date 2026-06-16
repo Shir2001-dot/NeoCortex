@@ -92,7 +92,10 @@ async function doIngest() {
             const file = document.getElementById("pdf-file").files[0];
             if (!file) throw new Error("נא לבחור קובץ PDF");
             const arrayBuffer = await file.arrayBuffer();
-            const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+            const bytes = new Uint8Array(arrayBuffer);
+            let binary = "";
+            for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+            const base64 = btoa(binary);
             res = await fetch("/ingest/pdf-base64", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
