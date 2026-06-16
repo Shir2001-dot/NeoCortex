@@ -31,11 +31,6 @@ async def ingest_pdf_base64(request: IngestPdfRequest) -> PatientRecord:
     import base64
     file_bytes = base64.b64decode(request.pdf_base64)
     raw_text = extract_text_from_pdf(file_bytes)
-    if not raw_text or not raw_text.strip():
-        raise HTTPException(
-            status_code=422,
-            detail="לא ניתן לחלץ טקסט מה-PDF. ייתכן שמדובר ב-PDF סרוק (תמונה). נסה להדביק את הטקסט ישירות בלשונית 'טקסט חופשי'."
-        )
     record = extract_patient_data(request.patient_id, raw_text, source="pdf")
     save_record(record)
     return record
