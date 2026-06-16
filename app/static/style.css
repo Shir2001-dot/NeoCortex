@@ -172,6 +172,81 @@ ul {
     color: var(--critical);
 }
 
+.tab-group {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.tab {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.4rem 1rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.tab.active {
+    background: #111827;
+    color: white;
+    border-color: #111827;
+}
+
+input[type="file"] {
+    width: 100%;
+    padding: 0.6rem;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+    background: #f8fafc;
+    cursor: pointer;
+}
+
+.vitals-edit {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.vitals-edit h3 {
+    margin: 0 0 0.75rem;
+    font-size: 0.95rem;
+    color: var(--muted);
+}
+
+.vitals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.vitals-grid label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+}
+
+.vitals-grid input {
+    margin-bottom: 0;
+    padding: 0.4rem;
+    font-size: 0.9rem;
+}
+
+button.outline {
+    background: transparent;
+    color: #111827;
+    border: 1px solid #111827;
+}
+
+button.outline:hover {
+    background: #f1f5f9;
+}
+
 .disclaimer {
     background: #fffbeb;
     border: 1px solid #e0a100;

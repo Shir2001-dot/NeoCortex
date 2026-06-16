@@ -46,6 +46,15 @@ class IngestTextRequest(BaseModel):
     text: str
 
 
+class VitalsUpdateRequest(BaseModel):
+    heart_rate: Optional[float] = None
+    blood_pressure_systolic: Optional[float] = None
+    blood_pressure_diastolic: Optional[float] = None
+    temperature_celsius: Optional[float] = None
+    respiratory_rate: Optional[float] = None
+    spo2_percent: Optional[float] = None
+
+
 class DecisionFlag(BaseModel):
     severity: str = Field(description="'info', 'warning', or 'critical'")
     message: str

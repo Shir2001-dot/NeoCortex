@@ -18,8 +18,20 @@
             <label for="patient-id">מזהה מטופל</label>
             <input type="text" id="patient-id" value="demo-001" />
 
-            <label for="raw-text">טקסט רפואי (הפניה / סיכום)</label>
-            <textarea id="raw-text" placeholder="הדבק/י כאן טקסט רפואי חופשי..."></textarea>
+            <div class="tab-group">
+                <button class="tab active" id="tab-text" onclick="switchTab('text')">טקסט חופשי</button>
+                <button class="tab" id="tab-pdf" onclick="switchTab('pdf')">העלאת PDF</button>
+            </div>
+
+            <div id="input-text">
+                <label for="raw-text">טקסט רפואי (הפניה / סיכום)</label>
+                <textarea id="raw-text" placeholder="הדבק/י כאן טקסט רפואי חופשי..."></textarea>
+            </div>
+
+            <div id="input-pdf" class="hidden">
+                <label for="pdf-file">קובץ PDF רפואי</label>
+                <input type="file" id="pdf-file" accept=".pdf" />
+            </div>
 
             <button id="ingest-btn">חלץ נתוני מטופל</button>
             <div class="status" id="ingest-status"></div>
@@ -28,6 +40,39 @@
         <section class="card hidden" id="record-card">
             <h2>2. רשומת מטופל מבונה</h2>
             <div id="record-content"></div>
+
+            <div class="vitals-edit">
+                <h3>עדכון מדדים ידני</h3>
+                <div class="vitals-grid">
+                    <div>
+                        <label>דופק (bpm)</label>
+                        <input type="number" id="v-hr" placeholder="לדוגמה: 80" />
+                    </div>
+                    <div>
+                        <label>ל"ד סיסטולי</label>
+                        <input type="number" id="v-sys" placeholder="לדוגמה: 120" />
+                    </div>
+                    <div>
+                        <label>ל"ד דיאסטולי</label>
+                        <input type="number" id="v-dia" placeholder="לדוגמה: 80" />
+                    </div>
+                    <div>
+                        <label>טמפרטורה (°C)</label>
+                        <input type="number" step="0.1" id="v-temp" placeholder="לדוגמה: 37.2" />
+                    </div>
+                    <div>
+                        <label>סטורציה (%)</label>
+                        <input type="number" id="v-spo2" placeholder="לדוגמה: 98" />
+                    </div>
+                    <div>
+                        <label>קצב נשימה</label>
+                        <input type="number" id="v-rr" placeholder="לדוגמה: 16" />
+                    </div>
+                </div>
+                <button id="vitals-btn" class="outline">עדכן מדדים</button>
+                <div class="status" id="vitals-status"></div>
+            </div>
+
             <button id="decision-btn" class="secondary">הרץ סוכן החלטות</button>
             <div class="status" id="decision-status"></div>
         </section>

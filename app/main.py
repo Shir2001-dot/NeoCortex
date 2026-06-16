@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.agents.decision_agent import evaluate_patient
 from app.agents.ingestion_agent import extract_patient_data
-from app.models import DecisionResult, IngestTextRequest, PatientRecord
+from app.models import DecisionResult, IngestTextRequest, PatientRecord, VitalSigns, VitalsUpdateRequest
 from app.pdf_utils import extract_text_from_pdf
 from app.storage import get_record, save_record
 
@@ -39,6 +39,18 @@ async def get_patient(patient_id: str) -> PatientRecord:
     record = get_record(patient_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Patient not found")
+    return record
+
+
+@app.patch("/patients/{patient_id}/vitals", response_model=PatientRecord)
+async def update_vitals(patient_id: str, vitals: VitalsUpdateRequest) -> PatientRecord:
+    record = get_record(patient_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    current = record.vitals or VitalSigns()
+    updated = current.model_copy(update={k: v for k, v in vitals.model_dump().items() if v is not None})
+    record.vitals = updated
+    save_record(record)
     return record
 
 
