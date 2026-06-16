@@ -55,32 +55,59 @@ header {
     line-height: 1;
 }
 
+.logo-wordmark {
+    display: flex;
+    align-items: baseline;
+    gap: 0;
+    line-height: 1;
+}
+
 .logo-neo {
-    font-size: 1.35rem;
-    font-weight: 800;
-    letter-spacing: 3px;
-    color: white;
+    font-size: 1.5rem;
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: #ffffff;
+    text-shadow:
+        0 1px 0 #a8c8f0,
+        0 2px 0 #6fa8d8,
+        0 3px 0 #4a85b8,
+        0 4px 8px rgba(0,0,0,.5),
+        0 0 20px rgba(255,255,255,.15);
 }
 
 .logo-cortex {
-    font-size: 1.35rem;
-    font-weight: 300;
-    letter-spacing: 3px;
+    font-size: 1.5rem;
+    font-weight: 200;
+    letter-spacing: 4px;
     color: #7dd3fc;
+    text-shadow:
+        0 1px 0 rgba(125,211,252,.5),
+        0 2px 4px rgba(0,180,255,.3),
+        0 0 16px rgba(0,212,255,.2);
 }
 
 .logo-wave {
-    height: 2px;
-    background: linear-gradient(to left, transparent, #00d4ff 40%, transparent);
-    border-radius: 999px;
-    margin-top: 3px;
+    position: relative;
+    height: 3px;
+    margin-top: 4px;
+    overflow: visible;
+}
+
+.logo-wave svg {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 14px;
+    overflow: visible;
 }
 
 .logo-sub {
-    font-size: 0.7rem;
-    color: rgba(255,255,255,.55);
-    margin-top: 2px;
-    letter-spacing: 0.3px;
+    font-size: 0.68rem;
+    color: rgba(255,255,255,.5);
+    margin-top: 5px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 .header-badge {

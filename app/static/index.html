@@ -11,10 +11,31 @@
 <header>
     <div class="logo">
         <div class="logo-text">
-            <span class="logo-neo">NEO</span><span class="logo-cortex">CORTEX</span>
-            <div class="logo-wave"></div>
+            <div class="logo-wordmark">
+                <span class="logo-neo">NEO</span><span class="logo-cortex">CORTEX</span>
+            </div>
+            <div class="logo-wave">
+                <svg viewBox="0 0 200 14" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="transparent"/>
+                            <stop offset="20%" stop-color="#00d4ff" stop-opacity="0.6"/>
+                            <stop offset="50%" stop-color="#00eaff"/>
+                            <stop offset="80%" stop-color="#00d4ff" stop-opacity="0.6"/>
+                            <stop offset="100%" stop-color="transparent"/>
+                        </linearGradient>
+                        <filter id="waveGlow">
+                            <feGaussianBlur stdDeviation="1.5" result="blur"/>
+                            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                        </filter>
+                    </defs>
+                    <path d="M0,8 Q25,2 50,8 Q75,14 100,8 Q125,2 150,8 Q175,14 200,8"
+                          fill="none" stroke="url(#waveGrad)" stroke-width="2.5"
+                          filter="url(#waveGlow)" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div class="logo-sub">Clinical AI · מערכת תמיכה קלינית</div>
         </div>
-        <div class="logo-sub">Clinical AI · מערכת תמיכה קלינית</div>
     </div>
     <div class="header-badge">Beta · קליני בלבד</div>
 </header>
