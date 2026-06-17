@@ -58,12 +58,19 @@ def save_record(record: PatientRecord) -> None:
         session.commit()
 
 
+def _parse(data) -> dict:
+    """Handle both str (Text column) and dict (JSON column) from DB."""
+    if isinstance(data, dict):
+        return data
+    return json.loads(data)
+
+
 def get_record(patient_id: str) -> PatientRecord | None:
     with SessionLocal() as session:
         row = session.get(PatientRecordRow, patient_id)
         if row is None:
             return None
-        return PatientRecord(**json.loads(row.data))
+        return PatientRecord(**_parse(row.data))
 
 
 def upsert_master(patient_id: str, full_name: str | None, dob: str | None, gender: str | None) -> None:
@@ -102,7 +109,7 @@ def get_transactions(patient_id: str) -> list[PatientTransaction]:
         rows = session.query(PatientTransactionRow).filter_by(patient_id=patient_id).order_by(PatientTransactionRow.date.desc()).all()
         result = []
         for row in rows:
-            extracted = PatientRecord(**json.loads(row.extracted_json))
+            extracted = PatientRecord(**_parse(row.extracted_json))
             result.append(PatientTransaction(
                 transaction_id=row.transaction_id,
                 patient_id=row.patient_id,
