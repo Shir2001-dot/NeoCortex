@@ -1,11 +1,34 @@
+import base64
 import json
 import os
 from datetime import datetime
 
+from cryptography.fernet import Fernet, InvalidToken
 from sqlalchemy import Column, DateTime, ForeignKey, String, Text, create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.models import PatientMaster, PatientRecord, PatientTransaction
+
+# ─── Field-level encryption ───
+_raw_key = os.environ.get("ENCRYPTION_KEY", "")
+if _raw_key:
+    _fernet = Fernet(_raw_key.encode() if len(_raw_key) == 44 else base64.urlsafe_b64encode(_raw_key.encode()[:32].ljust(32, b"\0")))
+else:
+    # Dev mode: generate a temporary in-process key (data is NOT persisted encrypted across restarts)
+    _fernet = Fernet(Fernet.generate_key())
+
+def _encrypt(value: str) -> str:
+    if not value:
+        return value
+    return _fernet.encrypt(value.encode()).decode()
+
+def _decrypt(value: str) -> str:
+    if not value:
+        return value
+    try:
+        return _fernet.decrypt(value.encode()).decode()
+    except (InvalidToken, Exception):
+        return value  # already plaintext (legacy row)
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///neocortex.db")
 
@@ -219,7 +242,7 @@ def save_record(record: PatientRecord, clinic_id: str | None = None,
         session.merge(
             PatientRecordRow(
                 patient_id=record.patient_id,
-                data=record.model_dump_json(),
+                data=_encrypt(record.model_dump_json()),
                 created_at=record.created_at,
                 clinic_id=clinic_id,
                 doctor_id_number=doctor_id_number,
@@ -241,22 +264,22 @@ def get_record(patient_id: str) -> PatientRecord | None:
         row = session.get(PatientRecordRow, patient_id)
         if row is None:
             return None
-        return PatientRecord(**_parse(row.data))
+        return PatientRecord(**_parse(_decrypt(row.data)))
 
 
 def upsert_master(patient_id: str, full_name: str | None, dob: str | None, gender: str | None) -> None:
     with SessionLocal() as session:
         existing = session.get(PatientMasterRow, patient_id)
         if existing:
-            if full_name: existing.full_name = full_name
-            if dob: existing.date_of_birth = dob
-            if gender: existing.gender = gender
+            if full_name: existing.full_name = _encrypt(full_name)
+            if dob: existing.date_of_birth = _encrypt(dob)
+            if gender: existing.gender = _encrypt(gender)
         else:
             session.add(PatientMasterRow(
                 patient_id=patient_id,
-                full_name=full_name,
-                date_of_birth=dob,
-                gender=gender,
+                full_name=_encrypt(full_name) if full_name else None,
+                date_of_birth=_encrypt(dob) if dob else None,
+                gender=_encrypt(gender) if gender else None,
             ))
         session.commit()
 
@@ -269,8 +292,8 @@ def save_transaction(tx: PatientTransaction, clinic_id: str | None = None,
             patient_id=tx.patient_id,
             date=tx.date,
             transaction_type=tx.transaction_type.value,
-            raw_text=tx.raw_text,
-            extracted_json=tx.extracted.model_dump_json(),
+            raw_text=_encrypt(tx.raw_text),
+            extracted_json=_encrypt(tx.extracted.model_dump_json()),
             clinic_id=clinic_id,
             doctor_id_number=doctor_id_number,
         )
@@ -283,13 +306,13 @@ def get_transactions(patient_id: str) -> list[PatientTransaction]:
         rows = session.query(PatientTransactionRow).filter_by(patient_id=patient_id).order_by(PatientTransactionRow.date.desc()).all()
         result = []
         for row in rows:
-            extracted = PatientRecord(**_parse(row.extracted_json))
+            extracted = PatientRecord(**_parse(_decrypt(row.extracted_json)))
             result.append(PatientTransaction(
                 transaction_id=row.transaction_id,
                 patient_id=row.patient_id,
                 date=row.date,
                 transaction_type=row.transaction_type,
-                raw_text=row.raw_text,
+                raw_text=_decrypt(row.raw_text),
                 extracted=extracted,
             ))
         return result
@@ -303,9 +326,9 @@ def get_master(patient_id: str) -> PatientMaster | None:
         transactions = get_transactions(patient_id)
         return PatientMaster(
             patient_id=row.patient_id,
-            full_name=row.full_name,
-            date_of_birth=row.date_of_birth,
-            gender=row.gender,
+            full_name=_decrypt(row.full_name) if row.full_name else None,
+            date_of_birth=_decrypt(row.date_of_birth) if row.date_of_birth else None,
+            gender=_decrypt(row.gender) if row.gender else None,
             transactions=transactions,
         )
 
@@ -316,9 +339,9 @@ def list_patients() -> list[PatientMaster]:
         return [
             PatientMaster(
                 patient_id=row.patient_id,
-                full_name=row.full_name,
-                date_of_birth=row.date_of_birth,
-                gender=row.gender,
+                full_name=_decrypt(row.full_name) if row.full_name else None,
+                date_of_birth=_decrypt(row.date_of_birth) if row.date_of_birth else None,
+                gender=_decrypt(row.gender) if row.gender else None,
                 transactions=[],
             )
             for row in rows
