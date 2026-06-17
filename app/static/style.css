@@ -363,75 +363,98 @@ input[type="file"]:hover { border-color: var(--primary); }
 .info-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 0.75rem;
-    margin-bottom: 1.25rem;
-}
-
-.info-cell {
-    background: #f8fafc;
-    border-radius: 8px;
-    padding: 0.7rem 0.9rem;
-    border: 1px solid var(--border);
-}
-
-.info-cell .lbl {
-    font-size: 0.72rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    color: var(--muted);
-    margin-bottom: 0.2rem;
-}
-
-.info-cell .val {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--text);
-}
-
-.section-title {
-    font-size: 0.78rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    color: var(--muted);
-    margin: 1rem 0 0.5rem;
-    padding-bottom: 0.3rem;
-    border-bottom: 1px solid var(--border);
-}
-
-.tag-list {
-    display: flex;
-    flex-direction: column;
     gap: 0;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0;
     border: 1px solid var(--border);
     border-radius: 8px;
     overflow: hidden;
 }
 
-.tag {
-    background: #ffffff;
-    color: var(--text);
-    padding: 0.45rem 0.75rem;
-    font-size: 0.85rem;
-    font-weight: 400;
+.info-cell {
+    padding: 0.55rem 0.85rem;
+    border-left: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
+    background: #fff;
+}
+
+.info-cell:nth-child(3n) { border-left: none; }
+.info-cell:nth-last-child(-n+3) { border-bottom: none; }
+.info-cell:nth-child(even) { background: #f9fafb; }
+
+.info-cell .lbl {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--muted);
+    margin-bottom: 0.15rem;
+}
+
+.info-cell .val {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* ─── CLINICAL DATA TABLE ─── */
+.clinical-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+    font-size: 0.875rem;
+}
+
+.clinical-table tr { border-bottom: 1px solid var(--border); }
+.clinical-table tr:last-child { border-bottom: none; }
+
+.clinical-table td.ct-label {
+    width: 28%;
+    padding: 0.5rem 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    background: #f9fafb;
+    white-space: nowrap;
+    vertical-align: top;
+}
+
+.clinical-table td.ct-value {
+    padding: 0.5rem 0.85rem;
+    color: var(--text);
+    vertical-align: top;
+}
+
+.section-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin: 1.1rem 0 0.4rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+/* ─── INLINE CHIPS (medications, symptoms, allergies) ─── */
+.tag-list {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-bottom: 0.1rem;
 }
 
-.tag:last-child { border-bottom: none; }
-
-.tag::before {
-    content: "•";
-    color: var(--primary);
-    font-size: 1rem;
-    flex-shrink: 0;
+.tag {
+    background: #f0f4f8;
+    color: #374151;
+    border-radius: 4px;
+    padding: 0.18rem 0.55rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid #d1d5db;
+    white-space: nowrap;
 }
-
-.tag:nth-child(even) { background: #f8fafc; }
 
 /* ─── VITALS EDIT ─── */
 .vitals-section {

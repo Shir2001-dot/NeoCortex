@@ -70,11 +70,11 @@ const TX_TYPE_COLORS = {
 function renderRecord(r) {
     const v = r.vitals || {};
     const bp = v.blood_pressure_systolic && v.blood_pressure_diastolic
-        ? `${v.blood_pressure_systolic}/${v.blood_pressure_diastolic}`
+        ? `${v.blood_pressure_systolic}/${v.blood_pressure_diastolic} mmHg`
         : "—";
 
     recordContent.innerHTML = `
-        <div class="info-grid">
+        <div class="info-grid" style="margin-bottom:1rem">
             ${infoCell("שם מלא", r.full_name)}
             ${infoCell("תאריך לידה", r.date_of_birth)}
             ${infoCell("מגדר", r.gender)}
@@ -82,18 +82,22 @@ function renderRecord(r) {
             ${infoCell('ל"ד', bp)}
             ${infoCell("סטורציה", v.spo2_percent ? v.spo2_percent + "%" : null)}
         </div>
-        <div class="section-title">תלונה עיקרית</div>
-        <p style="font-size:.9rem;margin-bottom:.75rem">${esc(r.chief_complaint)}</p>
-        <div class="section-title">תסמינים</div>
-        ${tagList(r.symptoms)}
-        <div class="section-title">היסטוריה רפואית</div>
-        ${tagList(r.medical_history)}
-        <div class="section-title">תרופות</div>
-        ${tagList(r.medications)}
-        <div class="section-title">אלרגיות</div>
-        ${tagList(r.allergies)}
+        <table class="clinical-table" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:1rem">
+            ${clinicalRow("תלונה עיקרית", esc(r.chief_complaint) || "—")}
+            ${clinicalRow("תסמינים", tagList(r.symptoms))}
+            ${clinicalRow("היסטוריה רפואית", tagList(r.medical_history))}
+            ${clinicalRow("תרופות", tagList(r.medications))}
+            ${clinicalRow("אלרגיות", tagList(r.allergies))}
+        </table>
     `;
     populateVitals(r.vitals);
+}
+
+function clinicalRow(label, valueHtml) {
+    return `<tr>
+        <td class="ct-label">${label}</td>
+        <td class="ct-value">${valueHtml}</td>
+    </tr>`;
 }
 
 function infoCell(lbl, val) {
