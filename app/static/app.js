@@ -428,7 +428,8 @@ document.getElementById("summary-save-btn").addEventListener("click", async () =
 
 // ─── Print / PDF Export ───
 printBtn.addEventListener("click", () => {
-    window.print();
+    if (!currentPatientId) return;
+    window.open(`/patients/${encodeURIComponent(currentPatientId)}/export-pdf`, "_blank");
 });
 
 // ─── Patient Search ───

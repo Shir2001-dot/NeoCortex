@@ -1,9 +1,10 @@
+import io
 import uuid
 from datetime import datetime
 from typing import Optional
 
 from fastapi import Cookie, Depends, FastAPI, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.auth import (
@@ -347,6 +348,97 @@ async def get_patient(patient_id: str, user: dict = Depends(require_permission("
 @app.get("/patients/{patient_id}/transactions", response_model=list[PatientTransaction])
 async def get_patient_transactions(patient_id: str, user: dict = Depends(require_permission("view_records"))) -> list[PatientTransaction]:
     return get_transactions(patient_id)
+
+
+@app.get("/patients/{patient_id}/export-pdf")
+async def export_pdf(patient_id: str, user: dict = Depends(require_permission("view_records"))):
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+
+    record = get_record(patient_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4,
+                            rightMargin=2*cm, leftMargin=2*cm,
+                            topMargin=2*cm, bottomMargin=2*cm)
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle("title", parent=styles["Title"], fontSize=18, spaceAfter=6)
+    h2_style    = ParagraphStyle("h2", parent=styles["Heading2"], fontSize=12, spaceAfter=4, textColor=colors.HexColor("#1a56db"))
+    body_style  = ParagraphStyle("body", parent=styles["Normal"], fontSize=10, leading=14)
+    label_style = ParagraphStyle("label", parent=styles["Normal"], fontSize=9,
+                                 textColor=colors.HexColor("#6b7280"), leading=13)
+
+    def section(title, items):
+        elems = [Paragraph(title, h2_style), HRFlowable(width="100%", thickness=0.5,
+                 color=colors.HexColor("#e5e7eb"), spaceAfter=6)]
+        for label, value in items:
+            if value:
+                elems.append(Paragraph(label, label_style))
+                elems.append(Paragraph(str(value), body_style))
+                elems.append(Spacer(1, 4))
+        return elems
+
+    story = []
+    story.append(Paragraph("NeoCortex AI — תיק מטופל", title_style))
+    story.append(Paragraph(f"ת.ז: {patient_id}  |  הופק: {datetime.now().strftime('%d/%m/%Y %H:%M')}", label_style))
+    story.append(Spacer(1, 0.4*cm))
+
+    story += section("פרטים אישיים", [
+        ("שם מלא", record.full_name),
+        ("תאריך לידה", record.date_of_birth),
+        ("מין", record.gender),
+        ("תלונה עיקרית", record.chief_complaint),
+    ])
+
+    if record.diagnoses:
+        story.append(Paragraph("אבחנות", h2_style))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e5e7eb"), spaceAfter=6))
+        for d in record.diagnoses:
+            story.append(Paragraph(f"• {d}", body_style))
+        story.append(Spacer(1, 0.3*cm))
+
+    if record.medications:
+        story.append(Paragraph("תרופות", h2_style))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e5e7eb"), spaceAfter=6))
+        for m in record.medications:
+            story.append(Paragraph(f"• {m}", body_style))
+        story.append(Spacer(1, 0.3*cm))
+
+    if record.vitals:
+        v = record.vitals
+        story += section("מדדים חיוניים", [
+            ("דופק", f"{v.heart_rate} bpm" if v.heart_rate else None),
+            ("לחץ דם", f"{v.systolic_bp}/{v.diastolic_bp} mmHg" if v.systolic_bp else None),
+            ("טמפרטורה", f"{v.temperature_celsius} °C" if v.temperature_celsius else None),
+            ("חמצן בדם", f"{v.spo2_percent}%" if v.spo2_percent else None),
+        ])
+
+    if record.allergies:
+        story.append(Paragraph("אלרגיות", h2_style))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e5e7eb"), spaceAfter=6))
+        for a in record.allergies:
+            story.append(Paragraph(f"• {a}", body_style))
+        story.append(Spacer(1, 0.3*cm))
+
+    story += section("רקע רפואי", [
+        ("היסטוריה רפואית", "\n".join(record.medical_history) if record.medical_history else None),
+        ("הערות", record.notes),
+    ])
+
+    doc.build(story)
+    buf.seek(0)
+    log_action(user["id_number"], "export_pdf", user_name=user.get("full_name"),
+               clinic_id=user.get("clinic_id"), patient_id=patient_id)
+    return StreamingResponse(buf, media_type="application/pdf",
+                             headers={"Content-Disposition": f"attachment; filename=patient-{patient_id}.pdf"})
 
 
 @app.patch("/patients/{patient_id}/vitals", response_model=PatientRecord)
