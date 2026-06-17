@@ -10,8 +10,6 @@ const interactionsCard    = document.getElementById("interactions-card");
 const recordContent       = document.getElementById("record-content");
 const decisionContent     = document.getElementById("decision-content");
 const interactionsContent = document.getElementById("interactions-content");
-const timelineSection = document.getElementById("timeline-section");
-const timelineContent = document.getElementById("timeline-content");
 
 let currentPatientId = null;
 let currentRecord = null;
@@ -140,33 +138,6 @@ function populateVitals(v) {
     if (v.respiratory_rate)         document.getElementById("v-rr").value   = v.respiratory_rate;
 }
 
-// ─── Render transaction timeline ───
-function renderTimeline(transactions, currentTxId) {
-    if (!transactions || transactions.length === 0) {
-        timelineSection.classList.add("hidden");
-        return;
-    }
-    timelineSection.classList.remove("hidden");
-    timelineContent.innerHTML = transactions.map((tx, idx) => {
-        const isCurrent = tx.transaction_id === currentTxId;
-        const label = TX_TYPE_LABELS[tx.transaction_type] || tx.transaction_type;
-        const colorClass = TX_TYPE_COLORS[tx.transaction_type] || "badge-referral";
-        const complaint = tx.extracted?.chief_complaint || "—";
-        return `
-            <div class="timeline-item${isCurrent ? " timeline-current" : ""}">
-                <div class="timeline-dot${isCurrent ? " timeline-dot-current" : ""}"></div>
-                <div class="timeline-body">
-                    <div class="timeline-header">
-                        <span class="timeline-date">${esc(tx.date)}</span>
-                        <span class="tx-badge ${colorClass}">${esc(label)}</span>
-                        ${isCurrent ? '<span class="current-badge">נוכחי</span>' : ""}
-                    </div>
-                    <div class="timeline-complaint">${esc(complaint)}</div>
-                </div>
-            </div>
-        `;
-    }).join("");
-}
 
 // ─── Render decision ───
 function renderDecision(result) {
@@ -247,14 +218,6 @@ ingestBtn.addEventListener("click", async () => {
         showView("record");
         setStatus("ingest","הופק בהצלחה ✓","success");
 
-        // Load full transaction history
-        try {
-            const txRes = await fetch(`/patients/${encodeURIComponent(currentPatientId)}/transactions`);
-            if (txRes.ok) {
-                const transactions = await txRes.json();
-                renderTimeline(transactions, tx.transaction_id);
-            }
-        } catch(e) { /* non-critical */ }
 
     } catch (e) {
         setStatus("ingest", networkErrMsg(e), "error");
@@ -428,9 +391,6 @@ document.getElementById("summary-save-btn").addEventListener("click", async () =
         if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
         document.getElementById("save-summary-msg").textContent = "✓ נשמר בתיק המטופל";
         document.getElementById("save-summary-msg").className = "success";
-        // Refresh timeline
-        const txRes = await fetch(`/patients/${encodeURIComponent(currentPatientId)}/transactions`);
-        if (txRes.ok) renderTimeline(await txRes.json(), null);
     } catch (e) {
         document.getElementById("save-summary-msg").textContent = networkErrMsg(e);
         document.getElementById("save-summary-msg").className = "error";
@@ -475,10 +435,7 @@ searchBtn.addEventListener("click", async () => {
             item.addEventListener("click", async () => {
                 const pid = item.dataset.id;
                 try {
-                    const [recRes, txRes] = await Promise.all([
-                        fetch(`/patients/${encodeURIComponent(pid)}`),
-                        fetch(`/patients/${encodeURIComponent(pid)}/transactions`),
-                    ]);
+                    const recRes = await fetch(`/patients/${encodeURIComponent(pid)}`);
                     if (!recRes.ok) throw new Error("מטופל לא נמצא");
                     const record = await recRes.json();
                     currentPatientId = pid;
@@ -489,10 +446,6 @@ searchBtn.addEventListener("click", async () => {
                     unlockClinicalNav();
                     updateSidebarPatient(record.full_name, pid);
                     showView("record");
-                    if (txRes.ok) {
-                        const transactions = await txRes.json();
-                        renderTimeline(transactions, null);
-                    }
                     resultsEl.innerHTML = "";
                     document.getElementById("search-input").value = "";
                 } catch(e) {
