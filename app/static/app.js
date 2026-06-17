@@ -6,6 +6,11 @@ const recordCard  = document.getElementById("record-card");
 const decisionCard = document.getElementById("decision-card");
 const recordContent = document.getElementById("record-content");
 const decisionContent = document.getElementById("decision-content");
+const searchBtn   = document.getElementById("search-btn");
+const searchInput = document.getElementById("search-input");
+const searchResults = document.getElementById("search-results");
+const timelineSection = document.getElementById("timeline-section");
+const timelineContent = document.getElementById("timeline-content");
 
 let currentPatientId = null;
 let currentTab = "text";
@@ -49,6 +54,20 @@ function tagList(items) {
     if (!items?.length) return "<span style='color:var(--muted);font-size:.85rem'>אין נתונים</span>";
     return `<div class="tag-list">${items.map(i=>`<span class="tag">${esc(i)}</span>`).join("")}</div>`;
 }
+
+const TX_TYPE_LABELS = {
+    referral: "הפניה",
+    hospitalization: "אשפוז",
+    visit: "ביקור",
+    test: "בדיקה",
+};
+
+const TX_TYPE_COLORS = {
+    referral: "badge-referral",
+    hospitalization: "badge-hospitalization",
+    visit: "badge-visit",
+    test: "badge-test",
+};
 
 // ─── Render patient record ───
 function renderRecord(r) {
@@ -94,6 +113,34 @@ function populateVitals(v) {
     if (v.respiratory_rate)         document.getElementById("v-rr").value   = v.respiratory_rate;
 }
 
+// ─── Render transaction timeline ───
+function renderTimeline(transactions, currentTxId) {
+    if (!transactions || transactions.length === 0) {
+        timelineSection.classList.add("hidden");
+        return;
+    }
+    timelineSection.classList.remove("hidden");
+    timelineContent.innerHTML = transactions.map((tx, idx) => {
+        const isCurrent = tx.transaction_id === currentTxId;
+        const label = TX_TYPE_LABELS[tx.transaction_type] || tx.transaction_type;
+        const colorClass = TX_TYPE_COLORS[tx.transaction_type] || "badge-referral";
+        const complaint = tx.extracted?.chief_complaint || "—";
+        return `
+            <div class="timeline-item${isCurrent ? " timeline-current" : ""}">
+                <div class="timeline-dot${isCurrent ? " timeline-dot-current" : ""}"></div>
+                <div class="timeline-body">
+                    <div class="timeline-header">
+                        <span class="timeline-date">${esc(tx.date)}</span>
+                        <span class="tx-badge ${colorClass}">${esc(label)}</span>
+                        ${isCurrent ? '<span class="current-badge">נוכחי</span>' : ""}
+                    </div>
+                    <div class="timeline-complaint">${esc(complaint)}</div>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
 // ─── Render decision ───
 function renderDecision(result) {
     const flags = (result.flags || []).map(f => `
@@ -121,6 +168,70 @@ function renderDecision(result) {
         <div class="section-title" style="margin-top:1.25rem">סיכום קליני</div>
         <div class="summary-box">${esc(result.summary)}</div>
     `;
+}
+
+// ─── Patient Search ───
+searchBtn.addEventListener("click", async () => {
+    const query = searchInput.value.trim().toLowerCase();
+    try {
+        const res = await fetch("/patients");
+        if (!res.ok) throw new Error("שגיאת שרת");
+        const patients = await res.json();
+        const filtered = query
+            ? patients.filter(p =>
+                (p.patient_id || "").toLowerCase().includes(query) ||
+                (p.full_name || "").toLowerCase().includes(query))
+            : patients;
+
+        if (filtered.length === 0) {
+            searchResults.innerHTML = `<div class="search-empty">לא נמצאו מטופלים</div>`;
+        } else {
+            searchResults.innerHTML = filtered.map(p => `
+                <div class="search-item" data-patient-id="${esc(p.patient_id)}">
+                    <div class="search-item-name">${esc(p.full_name || p.patient_id)}</div>
+                    <div class="search-item-id">${esc(p.patient_id)}</div>
+                </div>
+            `).join("");
+            searchResults.querySelectorAll(".search-item").forEach(el => {
+                el.addEventListener("click", () => selectPatient(el.dataset.patientId));
+            });
+        }
+        searchResults.classList.remove("hidden");
+    } catch (e) {
+        searchResults.innerHTML = `<div class="search-empty">${esc(e.message)}</div>`;
+        searchResults.classList.remove("hidden");
+    }
+});
+
+searchInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") searchBtn.click();
+});
+
+async function selectPatient(patientId) {
+    document.getElementById("patient-id").value = patientId;
+    searchResults.classList.add("hidden");
+    currentPatientId = patientId;
+
+    // Load latest record and show record card
+    try {
+        const [recRes, txRes] = await Promise.all([
+            fetch(`/patients/${encodeURIComponent(patientId)}`),
+            fetch(`/patients/${encodeURIComponent(patientId)}/transactions`),
+        ]);
+        if (recRes.ok) {
+            const record = await recRes.json();
+            renderRecord(record);
+            recordCard.classList.remove("hidden");
+            setStep(2);
+        }
+        if (txRes.ok) {
+            const transactions = await txRes.json();
+            // no specific current tx when just browsing
+            renderTimeline(transactions, null);
+        }
+    } catch(e) {
+        console.error(e);
+    }
 }
 
 // ─── Ingest ───
@@ -162,12 +273,22 @@ ingestBtn.addEventListener("click", async () => {
             throw new Error(err.detail || `שגיאת שרת (${res.status})`);
         }
 
-        const record = await res.json();
-        currentPatientId = record.patient_id;
-        renderRecord(record);
+        const tx = await res.json();
+        currentPatientId = tx.patient_id;
+        renderRecord(tx.extracted);
         recordCard.classList.remove("hidden");
         setStep(2);
         setStatus("ingest","הופק בהצלחה ✓","success");
+
+        // Load full transaction history
+        try {
+            const txRes = await fetch(`/patients/${encodeURIComponent(currentPatientId)}/transactions`);
+            if (txRes.ok) {
+                const transactions = await txRes.json();
+                renderTimeline(transactions, tx.transaction_id);
+            }
+        } catch(e) { /* non-critical */ }
+
     } catch (e) {
         setStatus("ingest", e.message, "error");
     } finally {
