@@ -68,5 +68,8 @@ def _ocr_with_claude_vision(file_bytes: bytes) -> str:
         messages=[{"role": "user", "content": content}],
     )
     if not response.content:
-        raise ValueError("Claude Vision OCR returned empty response — check ANTHROPIC_API_KEY")
-    return response.content[0].text
+        raise ValueError(f"Claude Vision OCR returned empty response. stop_reason={response.stop_reason}")
+    text = response.content[0].text
+    if not text or not text.strip():
+        raise ValueError("Claude Vision OCR returned empty text from PDF images")
+    return text

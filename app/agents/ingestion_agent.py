@@ -47,17 +47,23 @@ def _get_client() -> Anthropic:
 
 def extract_patient_data(patient_id: str, raw_text: str, source: str) -> PatientRecord:
     """Use an LLM to turn raw clinical text into a structured PatientRecord."""
+    if not raw_text or not raw_text.strip():
+        raise ValueError("No text could be extracted from the document")
+
     client = _get_client()
 
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=2048,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": raw_text}],
-    )
+    try:
+        response = client.messages.create(
+            model=MODEL,
+            max_tokens=2048,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": raw_text[:12000]}],
+        )
+    except Exception as e:
+        raise ValueError(f"Claude API error: {type(e).__name__}: {e}") from e
 
     if not response.content:
-        raise ValueError("Claude API returned an empty response — check that ANTHROPIC_API_KEY is valid")
+        raise ValueError(f"Claude returned empty response. stop_reason={response.stop_reason}")
     extracted = parse_json_response(response.content[0].text)
 
     return PatientRecord(
