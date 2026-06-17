@@ -66,6 +66,21 @@
         </div>
     </div>
 
+    <!-- SEARCH CARD -->
+    <div class="card" id="search-card">
+        <div class="card-header">
+            <div class="card-icon">🔍</div>
+            <h2>חיפוש מטופל קיים</h2>
+        </div>
+        <div class="card-body">
+            <div style="display:flex;gap:.5rem">
+                <input type="text" id="search-input" placeholder="חיפוש לפי שם או ת.ז..." style="flex:1" />
+                <button class="btn btn-outline" id="search-btn">חיפוש</button>
+            </div>
+            <div id="search-results" style="margin-top:.75rem"></div>
+        </div>
+    </div>
+
     <!-- STEP 1: INGEST -->
     <div class="card">
         <div class="card-header">
@@ -103,7 +118,10 @@
         <div class="card-header">
             <div class="card-icon">👤</div>
             <h2 id="record-card-title">נתוני מטופל</h2>
-            <button type="button" class="btn btn-outline" id="summary-btn" style="margin-right:auto;font-size:.82rem;padding:.35rem .8rem">📝 סיכום פגישה</button>
+            <div style="margin-right:auto;display:flex;gap:.5rem;align-items:center">
+                <button type="button" class="btn btn-outline" id="print-btn" style="font-size:.8rem;padding:.35rem .8rem">🖨️ הדפס / ייצא PDF</button>
+                <button type="button" class="btn btn-outline" id="summary-btn" style="font-size:.82rem;padding:.35rem .8rem">📝 סיכום פגישה</button>
+            </div>
         </div>
 
         <div class="split-layout" id="split-layout">
@@ -136,6 +154,7 @@
 
                     <div class="actions-row" style="gap:0.75rem;flex-wrap:wrap">
                         <button type="button" class="btn btn-secondary" id="decision-btn">🔍 הרץ ניתוח קליני</button>
+                        <button type="button" class="btn btn-outline" id="interactions-btn">⚠️ בדוק אינטראקציות תרופות</button>
                         <div class="status" id="decision-status">
                             <div class="spinner" id="decision-spinner"></div>
                             <span id="decision-msg"></span>
@@ -191,6 +210,21 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- INTERACTIONS CARD -->
+    <div class="card hidden" id="interactions-card">
+        <div class="card-header">
+            <div class="card-icon">⚠️</div>
+            <h2>אינטראקציות תרופות</h2>
+        </div>
+        <div class="card-body">
+            <div class="status" id="interactions-status">
+                <div class="spinner" id="interactions-spinner"></div>
+                <span id="interactions-msg"></span>
+            </div>
+            <div id="interactions-content"></div>
         </div>
     </div>
 

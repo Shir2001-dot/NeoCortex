@@ -111,3 +111,14 @@ class PatientMaster(BaseModel):
     date_of_birth: Optional[str] = None
     gender: Optional[str] = None
     transactions: list[PatientTransaction] = []
+
+
+class DrugInteraction(BaseModel):
+    drugs: list[str]
+    severity: str
+    description: str
+
+
+class InteractionsResult(BaseModel):
+    patient_id: str
+    interactions: list[DrugInteraction] = []

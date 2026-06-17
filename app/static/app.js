@@ -3,13 +3,17 @@ const ingestBtn   = document.getElementById("ingest-btn");
 const decisionBtn = document.getElementById("decision-btn");
 const vitalsBtn   = document.getElementById("vitals-btn");
 const summaryBtn  = document.getElementById("summary-btn");
+const interactionsBtn = document.getElementById("interactions-btn");
+const printBtn    = document.getElementById("print-btn");
+const searchBtn   = document.getElementById("search-btn");
 const recordCard  = document.getElementById("record-card");
 const decisionCard = document.getElementById("decision-card");
+const interactionsCard = document.getElementById("interactions-card");
 const recordContent = document.getElementById("record-content");
 const decisionContent = document.getElementById("decision-content");
+const interactionsContent = document.getElementById("interactions-content");
 const timelineSection = document.getElementById("timeline-section");
 const timelineContent = document.getElementById("timeline-content");
-const summaryModal = document.getElementById("summary-modal");
 
 let currentPatientId = null;
 let currentRecord = null;
@@ -426,6 +430,121 @@ document.getElementById("summary-save-btn").addEventListener("click", async () =
         document.getElementById("summary-save-btn").disabled = false;
     }
 });
+
+// ─── Print / PDF Export ───
+printBtn.addEventListener("click", () => {
+    window.print();
+});
+
+// ─── Patient Search ───
+searchBtn.addEventListener("click", async () => {
+    const query = document.getElementById("search-input").value.trim().toLowerCase();
+    const resultsEl = document.getElementById("search-results");
+    if (!query) { resultsEl.innerHTML = ""; return; }
+
+    try {
+        const res = await fetch("/patients");
+        if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
+        const patients = await res.json();
+        const filtered = patients.filter(p =>
+            (p.full_name || "").toLowerCase().includes(query) ||
+            (p.patient_id || "").toLowerCase().includes(query)
+        );
+
+        if (filtered.length === 0) {
+            resultsEl.innerHTML = `<div class="search-results"><div class="search-empty">לא נמצאו מטופלים</div></div>`;
+            return;
+        }
+
+        resultsEl.innerHTML = `<div class="search-results">${filtered.map(p => `
+            <div class="search-item" data-id="${esc(p.patient_id)}">
+                <span class="search-item-name">${esc(p.full_name || "ללא שם")}</span>
+                <span class="search-item-id">${esc(p.patient_id)}</span>
+            </div>
+        `).join("")}</div>`;
+
+        resultsEl.querySelectorAll(".search-item").forEach(item => {
+            item.addEventListener("click", async () => {
+                const pid = item.dataset.id;
+                try {
+                    const [recRes, txRes] = await Promise.all([
+                        fetch(`/patients/${encodeURIComponent(pid)}`),
+                        fetch(`/patients/${encodeURIComponent(pid)}/transactions`),
+                    ]);
+                    if (!recRes.ok) throw new Error("מטופל לא נמצא");
+                    const record = await recRes.json();
+                    currentPatientId = pid;
+                    currentRecord = record;
+                    const titleEl = document.getElementById("record-card-title");
+                    if (titleEl) titleEl.textContent = `נתוני מטופל · ת.ז ${pid}`;
+                    renderRecord(record);
+                    recordCard.classList.remove("hidden");
+                    decisionCard.classList.add("hidden");
+                    interactionsCard.classList.add("hidden");
+                    setStep(2);
+                    if (txRes.ok) {
+                        const transactions = await txRes.json();
+                        renderTimeline(transactions, null);
+                    }
+                    resultsEl.innerHTML = "";
+                    document.getElementById("search-input").value = "";
+                } catch(e) {
+                    resultsEl.innerHTML = `<div class="search-results"><div class="search-empty">${esc(e.message)}</div></div>`;
+                }
+            });
+        });
+    } catch(e) {
+        resultsEl.innerHTML = `<div class="search-results"><div class="search-empty">${esc(e.message)}</div></div>`;
+    }
+});
+
+document.getElementById("search-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") searchBtn.click();
+});
+
+// ─── Drug Interactions ───
+interactionsBtn.addEventListener("click", async () => {
+    if (!currentPatientId) return;
+    interactionsCard.classList.remove("hidden");
+    setStatus("interactions", "בודק אינטראקציות תרופות...", "loading");
+    interactionsBtn.disabled = true;
+    interactionsContent.innerHTML = "";
+
+    try {
+        const res = await fetch(`/patients/${encodeURIComponent(currentPatientId)}/interactions`, {
+            method: "POST",
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `שגיאת שרת (${res.status})`);
+        }
+        const result = await res.json();
+        setStatus("interactions", "", "");
+        renderInteractions(result);
+    } catch(e) {
+        setStatus("interactions", e.message, "error");
+    } finally {
+        interactionsBtn.disabled = false;
+    }
+});
+
+function renderInteractions(result) {
+    const items = result.interactions || [];
+    if (items.length === 0) {
+        interactionsContent.innerHTML = `<p style="color:var(--success);font-size:.9rem;margin-top:.5rem">✓ לא נמצאו אינטראקציות תרופתיות ידועות</p>`;
+        return;
+    }
+    interactionsContent.innerHTML = items.map(item => `
+        <div class="flag ${esc(item.severity)}">
+            <div class="flag-dot"></div>
+            <div class="flag-body">
+                <div class="flag-severity">${esc(item.severity)}</div>
+                <div style="font-size:.82rem;color:var(--text-secondary);margin-bottom:.2rem">${item.drugs.map(d => esc(d)).join(" ← ")}</div>
+                <div class="flag-msg">${esc(item.description)}</div>
+            </div>
+        </div>
+    `).join("");
+}
 
 // ─── Decision ───
 decisionBtn.addEventListener("click", async () => {

@@ -10,11 +10,13 @@ from app.auth import authenticate_user, create_token, get_current_user, require_
 
 from app.agents.decision_agent import evaluate_patient
 from app.agents.ingestion_agent import extract_patient_data
+from app.agents.interactions_agent import check_interactions
 from app.agents.summary_agent import generate_session_summary
 from app.models import (
     DecisionResult,
     IngestPdfRequest,
     IngestTextRequest,
+    InteractionsResult,
     PatientMaster,
     PatientRecord,
     PatientTransaction,
@@ -207,3 +209,14 @@ async def run_decision(patient_id: str) -> DecisionResult:
     # Pass prior transactions as history (exclude the most recent one which is current)
     history = transactions[1:] if len(transactions) > 1 else []
     return evaluate_patient(record, history=history)
+
+
+@app.post("/patients/{patient_id}/interactions", response_model=InteractionsResult)
+async def run_interactions(
+    patient_id: str,
+    _user: dict = Depends(require_doctor),
+) -> InteractionsResult:
+    record = get_record(patient_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    return check_interactions(patient_id, record.medications)

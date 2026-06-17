@@ -983,3 +983,58 @@ input[type="file"]:hover { border-color: var(--primary); }
     color: white;
     letter-spacing: 0.3px;
 }
+
+/* ─── PRINT / PDF EXPORT ─── */
+@media print {
+    @page {
+        size: A4;
+        margin: 20mm 15mm;
+    }
+
+    /* Hide everything by default */
+    body * { visibility: hidden; }
+
+    /* Show only record and decision cards */
+    #record-card,
+    #record-card *,
+    #decision-card,
+    #decision-card * {
+        visibility: visible;
+    }
+
+    /* Hide interactive / chrome elements inside those cards */
+    #record-card .vitals-section,
+    #record-card #timeline-section,
+    #record-card .actions-row,
+    #record-card .card-header button,
+    #decision-card .actions-row {
+        display: none !important;
+    }
+
+    header,
+    .stepper,
+    #search-card,
+    .card:first-of-type,   /* ingest card */
+    #interactions-card {
+        display: none !important;
+    }
+
+    #record-card,
+    #decision-card {
+        position: relative;
+        box-shadow: none;
+        border: 1px solid #ccc;
+        page-break-inside: avoid;
+        margin-bottom: 1rem;
+    }
+
+    body {
+        background: white;
+        color: black;
+    }
+
+    main {
+        max-width: 100%;
+        padding: 0;
+    }
+}
