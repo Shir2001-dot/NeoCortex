@@ -365,7 +365,16 @@ def log_action(user_id: str, action: str, user_name: str | None = None,
                clinic_id: str | None = None, patient_id: str | None = None,
                detail: str | None = None) -> None:
     import uuid
+    today = datetime.utcnow().date().isoformat()
     with SessionLocal() as session:
+        # For view_patient: only log once per doctor+patient per day
+        if action == "view_patient" and patient_id:
+            existing = (session.query(AuditLogRow)
+                        .filter_by(user_id=user_id, action="view_patient", patient_id=patient_id)
+                        .filter(AuditLogRow.detail == today)
+                        .first())
+            if existing:
+                return
         session.add(AuditLogRow(
             id=str(uuid.uuid4()),
             timestamp=datetime.utcnow(),
@@ -374,7 +383,7 @@ def log_action(user_id: str, action: str, user_name: str | None = None,
             clinic_id=clinic_id,
             action=action,
             patient_id=patient_id,
-            detail=detail,
+            detail=today if action == "view_patient" else detail,
         ))
         session.commit()
 
