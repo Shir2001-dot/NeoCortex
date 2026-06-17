@@ -18,6 +18,17 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
     return _ocr_with_claude_vision(file_bytes)
 
 
+def _deduplicate_chars(text: str) -> str:
+    """Fix doubled characters common in Clalit/Hebrew PDFs (e.g. 'ןןוו' → 'ןו')."""
+    if not text:
+        return text
+    result = [text[0]]
+    for ch in text[1:]:
+        if ch != result[-1]:
+            result.append(ch)
+    return "".join(result)
+
+
 def _extract_with_pdfplumber(file_bytes: bytes) -> str:
     parts: list[str] = []
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
@@ -29,7 +40,10 @@ def _extract_with_pdfplumber(file_bytes: bytes) -> str:
                 page_text = " ".join(w["text"] for w in words) if words else ""
             if page_text:
                 parts.append(page_text)
-    return "\n".join(parts)
+    raw = "\n".join(parts)
+    # Fix doubled characters (common in Clalit Hebrew PDFs)
+    deduped = _deduplicate_chars(raw)
+    return deduped
 
 
 def _ocr_with_claude_vision(file_bytes: bytes) -> str:
