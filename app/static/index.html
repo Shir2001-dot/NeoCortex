@@ -38,9 +38,13 @@
             </div>
         </div>
     </div>
-    <div style="display:flex;align-items:center;gap:.75rem">
+    <div style="display:flex;align-items:center;gap:1rem">
         <span class="header-badge">Beta · קליני בלבד</span>
-        <span id="header-user-name" style="color:rgba(255,255,255,.85);font-size:.8rem;font-weight:600"></span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.2">
+            <span id="header-user-name" style="color:#fff;font-size:.95rem;font-weight:700"></span>
+            <span id="header-user-role" style="color:rgba(255,255,255,.6);font-size:.72rem;font-weight:400"></span>
+        </div>
+        <div style="width:1px;height:28px;background:rgba(255,255,255,.2)"></div>
         <a id="admin-link" href="/admin" style="display:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:.3rem .7rem;font-size:.78rem;text-decoration:none">ניהול</a>
         <button id="logout-btn" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:.3rem .7rem;font-size:.78rem;cursor:pointer">יציאה</button>
     </div>

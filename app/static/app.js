@@ -589,8 +589,14 @@ let currentUser = null;
         currentUser = await res.json();
 
         const nameEl = document.getElementById("header-user-name");
+        const roleEl = document.getElementById("header-user-role");
         const adminLink = document.getElementById("admin-link");
         if (nameEl) nameEl.textContent = currentUser.full_name || "";
+        if (roleEl) {
+            const roleMap = { doctor: "רופא", admin: "מנהל", secretary: "מזכירה", nurse: "אחות", intern: "רופא מתמחה" };
+            const roleLabel = roleMap[currentUser.role] || currentUser.role;
+            roleEl.textContent = currentUser.specialty ? `${roleLabel} · ${currentUser.specialty}` : roleLabel;
+        }
 
         const role = currentUser.role;
 
@@ -607,9 +613,6 @@ let currentUser = null;
         }
 
         // Doctor/nurse/intern → apply permission-based UI
-        if (currentUser.specialty && nameEl) {
-            nameEl.textContent = `${currentUser.full_name} · ${currentUser.specialty}`;
-        }
         applyPermissions(currentUser.permissions || []);
 
     } catch(e) { /* ignore */ }
