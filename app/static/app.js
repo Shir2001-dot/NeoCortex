@@ -17,6 +17,12 @@ let currentPatientId = null;
 let currentRecord = null;
 let currentTab = "text";
 
+function networkErrMsg(e) {
+    if (!e.message || e.message === "Failed to fetch" || e.name === "TypeError")
+        return "השרת לא זמין — נסה שוב בעוד מספר שניות";
+    return e.message;
+}
+
 // ─── Sidebar Navigation ───
 function showView(viewName) {
     document.querySelectorAll(".view").forEach(v => v.classList.add("hidden"));
@@ -251,7 +257,7 @@ ingestBtn.addEventListener("click", async () => {
         } catch(e) { /* non-critical */ }
 
     } catch (e) {
-        setStatus("ingest", e.message, "error");
+        setStatus("ingest", networkErrMsg(e), "error");
     } finally {
         ingestBtn.disabled = false;
     }
@@ -390,7 +396,7 @@ document.getElementById("summary-generate-btn").addEventListener("click", async 
             document.getElementById("summary-result").scrollIntoView({ behavior: "smooth", block: "start" });
         }, 100);
     } catch (e) {
-        setStatus("summary", e.message, "error");
+        setStatus("summary", networkErrMsg(e), "error");
     } finally {
         document.getElementById("summary-generate-btn").disabled = false;
     }
@@ -426,7 +432,7 @@ document.getElementById("summary-save-btn").addEventListener("click", async () =
         const txRes = await fetch(`/patients/${encodeURIComponent(currentPatientId)}/transactions`);
         if (txRes.ok) renderTimeline(await txRes.json(), null);
     } catch (e) {
-        document.getElementById("save-summary-msg").textContent = e.message;
+        document.getElementById("save-summary-msg").textContent = networkErrMsg(e);
         document.getElementById("save-summary-msg").className = "error";
     } finally {
         document.getElementById("summary-save-btn").disabled = false;
@@ -523,7 +529,7 @@ interactionsBtn.addEventListener("click", async () => {
         setStatus("interactions", "", "");
         renderInteractions(result);
     } catch(e) {
-        setStatus("interactions", e.message, "error");
+        setStatus("interactions", networkErrMsg(e), "error");
     } finally {
         interactionsBtn.disabled = false;
     }
@@ -561,7 +567,7 @@ decisionBtn.addEventListener("click", async () => {
         decisionCard.classList.remove("hidden");
         setStatus("decision","","");
     } catch (e) {
-        setStatus("decision", e.message, "error");
+        setStatus("decision", networkErrMsg(e), "error");
     } finally {
         decisionBtn.disabled = false;
     }
