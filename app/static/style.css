@@ -1,34 +1,34 @@
 :root {
-    --primary: #1a56db;
-    --primary-dark: #1e429f;
-    --critical: #c81e1e;
-    --critical-bg: #fdf2f2;
-    --warning: #b45309;
-    --warning-bg: #fffbeb;
-    --info: #1e429f;
-    --info-bg: #ebf5ff;
-    --success: #046c4e;
-    --success-bg: #f3faf7;
+    --primary: #4d9fff;
+    --primary-dark: #1a72e8;
+    --critical: #ff6b6b;
+    --critical-bg: rgba(255,107,107,.12);
+    --warning: #ffc46b;
+    --warning-bg: rgba(255,196,107,.12);
+    --info: #7dd3fc;
+    --info-bg: rgba(125,211,252,.12);
+    --success: #4ade80;
+    --success-bg: rgba(74,222,128,.12);
     --bg: transparent;
-    --card: rgba(255,255,255,.88);
-    --text: #111928;
-    --text-secondary: #4b5563;
-    --muted: #9ca3af;
-    --border: #e5e7eb;
-    --shadow: 0 4px 24px rgba(0,0,0,.08);
-    --shadow-md: 0 8px 32px rgba(0,0,0,.12);
+    --card: rgba(255,255,255,.07);
+    --text: #e8f0ff;
+    --text-secondary: #93b4d8;
+    --muted: #5a7a9a;
+    --border: rgba(255,255,255,.1);
+    --shadow: 0 4px 24px rgba(0,0,0,.25);
+    --shadow-md: 0 8px 32px rgba(0,0,0,.35);
     --radius: 10px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { background: #f0f4f8; }
+html { background: #0a1628; }
 
 #neural-bg {
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: linear-gradient(135deg, #deeaff 0%, #e8f1ff 50%, #d6e8ff 100%);
+    background: linear-gradient(135deg, #0a1628 0%, #0d1f3c 50%, #0a1a30 100%);
     z-index: -1;
 }
 
@@ -145,7 +145,9 @@ main {
     display: flex;
     align-items: center;
     gap: 0;
-    background: var(--card);
+    background: rgba(255,255,255,.05);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,.08);
     border-radius: var(--radius);
     padding: 1rem 1.5rem;
     box-shadow: var(--shadow);
@@ -201,12 +203,12 @@ main {
 
 /* ─── CARD ─── */
 .card {
-    background: rgba(255,255,255,.88);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,.9);
+    background: rgba(255,255,255,.06);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,.1);
     border-radius: var(--radius);
-    box-shadow: 0 4px 24px rgba(0,0,0,.08);
+    box-shadow: 0 4px 32px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.08);
     overflow: hidden;
 }
 
@@ -228,7 +230,7 @@ main {
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: #ebf5ff;
+    background: rgba(77,159,255,.15);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -256,12 +258,12 @@ input[type="password"],
 textarea {
     width: 100%;
     padding: 0.6rem 0.9rem;
-    border: 1.5px solid var(--border);
+    border: 1.5px solid rgba(255,255,255,.12);
     border-radius: 7px;
     font-size: 0.92rem;
     font-family: inherit;
     color: var(--text);
-    background: #ffffff;
+    background: rgba(255,255,255,.07);
     transition: border-color .2s, box-shadow .2s;
     outline: none;
 }
@@ -271,8 +273,8 @@ input[type="number"]:focus,
 input[type="password"]:focus,
 textarea:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(26,86,219,.12);
-    background: #fff;
+    box-shadow: 0 0 0 3px rgba(77,159,255,.18);
+    background: rgba(255,255,255,.1);
 }
 
 textarea { min-height: 130px; resize: vertical; line-height: 1.5; }
@@ -280,9 +282,9 @@ textarea { min-height: 130px; resize: vertical; line-height: 1.5; }
 input[type="file"] {
     width: 100%;
     padding: 1.5rem;
-    border: 2px dashed var(--border);
+    border: 2px dashed rgba(255,255,255,.15);
     border-radius: 8px;
-    background: #f8fafc;
+    background: rgba(255,255,255,.04);
     text-align: center;
     cursor: pointer;
     font-size: 0.88rem;
@@ -295,7 +297,7 @@ input[type="file"]:hover { border-color: var(--primary); }
 /* ─── TABS ─── */
 .tab-group {
     display: flex;
-    background: #f3f4f6;
+    background: rgba(0,0,0,.2);
     border-radius: 8px;
     padding: 3px;
     gap: 3px;
@@ -316,10 +318,10 @@ input[type="file"]:hover { border-color: var(--primary); }
 }
 
 .tab.active {
-    background: white;
+    background: rgba(77,159,255,.2);
     color: var(--primary);
     font-weight: 600;
-    box-shadow: var(--shadow);
+    box-shadow: 0 2px 8px rgba(0,0,0,.3);
 }
 
 /* ─── BUTTONS ─── */
@@ -353,9 +355,9 @@ input[type="file"]:hover { border-color: var(--primary); }
 .btn-secondary:disabled { opacity: 0.55; cursor: default; }
 
 .btn-outline {
-    background: white;
+    background: rgba(255,255,255,.07);
     color: var(--text);
-    border: 1.5px solid var(--border);
+    border: 1.5px solid rgba(255,255,255,.15);
 }
 
 .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
@@ -376,12 +378,12 @@ input[type="file"]:hover { border-color: var(--primary); }
     padding: 0.55rem 0.85rem;
     border-left: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
-    background: #fff;
+    background: rgba(255,255,255,.04);
 }
 
 .info-cell:nth-child(3n) { border-left: none; }
 .info-cell:nth-last-child(-n+3) { border-bottom: none; }
-.info-cell:nth-child(even) { background: #f9fafb; }
+.info-cell:nth-child(even) { background: rgba(255,255,255,.07); }
 
 .info-cell .lbl {
     font-size: 0.7rem;
@@ -417,7 +419,7 @@ input[type="file"]:hover { border-color: var(--primary); }
     font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.3px;
-    background: #f9fafb;
+    background: rgba(255,255,255,.04);
     white-space: nowrap;
     vertical-align: top;
 }
@@ -448,20 +450,20 @@ input[type="file"]:hover { border-color: var(--primary); }
 }
 
 .tag {
-    background: #f0f4f8;
-    color: #374151;
+    background: rgba(77,159,255,.15);
+    color: #93c5fd;
     border-radius: 4px;
     padding: 0.18rem 0.55rem;
     font-size: 0.8rem;
     font-weight: 500;
-    border: 1px solid #d1d5db;
+    border: 1px solid rgba(77,159,255,.25);
     white-space: nowrap;
 }
 
 /* ─── VITALS EDIT ─── */
 .vitals-section {
-    background: #f8fafc;
-    border: 1px solid var(--border);
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.1);
     border-radius: 9px;
     padding: 1rem;
     margin: 1.25rem 0;
