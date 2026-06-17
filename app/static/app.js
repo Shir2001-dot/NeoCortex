@@ -435,9 +435,23 @@ document.getElementById("summary-save-btn").addEventListener("click", async () =
 });
 
 // ─── Print / PDF Export ───
-printBtn.addEventListener("click", () => {
+printBtn.addEventListener("click", async () => {
     if (!currentPatientId) return;
-    window.open(`/patients/${encodeURIComponent(currentPatientId)}/export-pdf`, "_blank");
+    try {
+        const res = await fetch(`/patients/${encodeURIComponent(currentPatientId)}/export-pdf`, {
+            method: "POST",
+        });
+        if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `patient-${currentPatientId}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch(e) {
+        alert(networkErrMsg(e));
+    }
 });
 
 // ─── Patient Search ───

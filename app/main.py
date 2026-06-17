@@ -350,7 +350,7 @@ async def get_patient_transactions(patient_id: str, user: dict = Depends(require
     return get_transactions(patient_id)
 
 
-@app.get("/patients/{patient_id}/export-pdf")
+@app.post("/patients/{patient_id}/export-pdf")
 async def export_pdf(patient_id: str, user: dict = Depends(require_permission("view_records"))):
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
