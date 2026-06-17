@@ -1,0 +1,28 @@
+name: Monthly Database Backup
+
+on:
+  schedule:
+    - cron: "0 3 1 * *"  # ראשון לכל חודש בשעה 03:00 UTC
+  workflow_dispatch:       # אפשרות הרצה ידנית
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install PostgreSQL client
+        run: sudo apt-get install -y postgresql-client
+
+      - name: Run pg_dump
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          TIMESTAMP=$(date +"%Y-%m-%d")
+          pg_dump "$DATABASE_URL" --no-owner --no-acl -F c -f "neocortex-backup-${TIMESTAMP}.dump"
+          echo "BACKUP_FILE=neocortex-backup-${TIMESTAMP}.dump" >> $GITHUB_ENV
+
+      - name: Upload backup as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: neocortex-backup-${{ github.run_id }}
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 90
