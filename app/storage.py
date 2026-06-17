@@ -31,7 +31,16 @@ class UserRow(Base):
     role = Column(String, nullable=False)
     clinic_id = Column(String, ForeignKey("clinics.id"), nullable=False)
     hashed_password = Column(String, nullable=False)
+    permissions = Column(Text, nullable=True)  # JSON list of permission strings
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+# Default permissions per role
+ROLE_DEFAULT_PERMISSIONS = {
+    "admin": [],  # admin has all via role check
+    "doctor": ["view_records", "edit_records", "prescribe", "clinical_analysis", "session_summary", "drug_interactions"],
+    "secretary": ["view_records"],
+}
 
 
 class PatientRecordRow(Base):
@@ -91,9 +100,10 @@ def seed_demo_data(session) -> None:
         role="admin",
         clinic_id="clinic-demo",
         hashed_password=hash_password("admin123"),
+        permissions=json.dumps([]),
     ))
 
-    # Doctor
+    # Doctor — full permissions
     session.add(UserRow(
         id_number="123456789",
         full_name='ד"ר כהן',
@@ -101,9 +111,10 @@ def seed_demo_data(session) -> None:
         role="doctor",
         clinic_id="clinic-demo",
         hashed_password=hash_password("doctor123"),
+        permissions=json.dumps(ROLE_DEFAULT_PERMISSIONS["doctor"]),
     ))
 
-    # Secretary
+    # Secretary — read only
     session.add(UserRow(
         id_number="987654321",
         full_name="שרה לוי",
@@ -111,6 +122,7 @@ def seed_demo_data(session) -> None:
         role="secretary",
         clinic_id="clinic-demo",
         hashed_password=hash_password("secretary123"),
+        permissions=json.dumps(ROLE_DEFAULT_PERMISSIONS["secretary"]),
     ))
 
     session.commit()
@@ -125,7 +137,9 @@ def get_users_by_clinic(session, clinic_id: str) -> list:
 
 
 def create_user(session, id_number: str, full_name: str, specialty: str | None,
-                role: str, clinic_id: str, hashed_password: str) -> UserRow:
+                role: str, clinic_id: str, hashed_password: str,
+                permissions: list | None = None) -> UserRow:
+    perms = permissions if permissions is not None else ROLE_DEFAULT_PERMISSIONS.get(role, [])
     user = UserRow(
         id_number=id_number,
         full_name=full_name,
@@ -133,6 +147,7 @@ def create_user(session, id_number: str, full_name: str, specialty: str | None,
         role=role,
         clinic_id=clinic_id,
         hashed_password=hashed_password,
+        permissions=json.dumps(perms),
     )
     session.add(user)
     session.commit()

@@ -595,13 +595,54 @@ let currentUser = null;
             return;
         }
 
-        // Doctor → full UI, show specialty badge
+        // Doctor/nurse/intern → apply permission-based UI
         if (currentUser.specialty && nameEl) {
             nameEl.textContent = `${currentUser.full_name} · ${currentUser.specialty}`;
         }
+        applyPermissions(currentUser.permissions || []);
 
     } catch(e) { /* ignore */ }
 })();
+
+function applyPermissions(perms) {
+    const has = p => perms.includes(p);
+
+    // Hide ingest card if no edit_records
+    if (!has("edit_records")) {
+        const ingestCard = document.querySelector(".card:has(#ingest-btn)");
+        if (ingestCard) ingestCard.style.display = "none";
+    }
+
+    // Hide vitals save button if no edit_records
+    if (!has("edit_records")) {
+        const vitalsBtn = document.getElementById("vitals-btn");
+        if (vitalsBtn) vitalsBtn.style.display = "none";
+    }
+
+    // Hide clinical analysis if no permission
+    if (!has("clinical_analysis")) {
+        const decisionBtn = document.getElementById("decision-btn");
+        if (decisionBtn) decisionBtn.style.display = "none";
+    }
+
+    // Hide drug interactions if no permission
+    if (!has("drug_interactions")) {
+        const interactionsBtn = document.getElementById("interactions-btn");
+        if (interactionsBtn) interactionsBtn.style.display = "none";
+    }
+
+    // Hide session summary if no permission
+    if (!has("session_summary")) {
+        const summaryBtn = document.getElementById("summary-btn");
+        if (summaryBtn) summaryBtn.style.display = "none";
+    }
+
+    // Hide record card entirely if no view_records
+    if (!has("view_records")) {
+        const recordCard = document.getElementById("record-card");
+        if (recordCard) recordCard.style.display = "none";
+    }
+}
 
 function applySecretaryView() {
     // Hide ingest card

@@ -79,12 +79,15 @@ async def do_login(body: dict):
         user = get_user_by_id(session, id_number)
         if not user or not verify_password(password, user.hashed_password):
             raise HTTPException(status_code=401, detail="מספר תעודת זהות או סיסמה שגויים")
+        import json as _json
+        perms = _json.loads(user.permissions) if user.permissions else []
         token_data = {
             "id_number": user.id_number,
             "full_name": user.full_name,
             "role": user.role,
             "clinic_id": user.clinic_id,
             "specialty": user.specialty,
+            "permissions": perms,
         }
         token = create_token(token_data)
         response = JSONResponse(content={
@@ -93,6 +96,7 @@ async def do_login(body: dict):
             "role": user.role,
             "clinic_id": user.clinic_id,
             "specialty": user.specialty,
+            "permissions": perms,
         })
         response.set_cookie("neocortex_token", token, httponly=True, samesite="lax", max_age=28800)
         return response
@@ -169,6 +173,7 @@ async def get_clinic_info(user: dict = Depends(require_admin)):
 
 @app.get("/admin/users")
 async def list_users(user: dict = Depends(require_admin)):
+    import json as _json
     with SessionLocal() as session:
         users = get_users_by_clinic(session, user["clinic_id"])
         return [
@@ -178,6 +183,7 @@ async def list_users(user: dict = Depends(require_admin)):
                 "specialty": u.specialty,
                 "role": u.role,
                 "clinic_id": u.clinic_id,
+                "permissions": _json.loads(u.permissions) if u.permissions else [],
             }
             for u in users
         ]
@@ -185,13 +191,15 @@ async def list_users(user: dict = Depends(require_admin)):
 
 @app.post("/admin/users")
 async def add_user(req: CreateUserRequest, user: dict = Depends(require_admin)):
-    if req.role not in ("doctor", "secretary", "admin"):
+    import json as _json
+    if req.role not in ("doctor", "secretary", "admin", "nurse", "intern"):
         raise HTTPException(status_code=400, detail="תפקיד לא תקין")
     with SessionLocal() as session:
         existing = get_user_by_id(session, req.id_number)
         if existing:
             raise HTTPException(status_code=409, detail="משתמש עם תעודת זהות זו כבר קיים")
         hashed = hash_password(req.password)
+        permissions = req.permissions if req.permissions is not None else None
         new_user = create_user(
             session,
             id_number=req.id_number,
@@ -200,6 +208,7 @@ async def add_user(req: CreateUserRequest, user: dict = Depends(require_admin)):
             role=req.role,
             clinic_id=user["clinic_id"],
             hashed_password=hashed,
+            permissions=permissions,
         )
         return {
             "id_number": new_user.id_number,
@@ -207,6 +216,7 @@ async def add_user(req: CreateUserRequest, user: dict = Depends(require_admin)):
             "specialty": new_user.specialty,
             "role": new_user.role,
             "clinic_id": new_user.clinic_id,
+            "permissions": _json.loads(new_user.permissions) if new_user.permissions else [],
         }
 
 
