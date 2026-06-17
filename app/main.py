@@ -398,12 +398,6 @@ async def export_pdf(patient_id: str, user: dict = Depends(require_permission("v
         ("תלונה עיקרית", record.chief_complaint),
     ])
 
-    if record.diagnoses:
-        story.append(Paragraph("אבחנות", h2_style))
-        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e5e7eb"), spaceAfter=6))
-        for d in record.diagnoses:
-            story.append(Paragraph(f"• {d}", body_style))
-        story.append(Spacer(1, 0.3*cm))
 
     if record.medications:
         story.append(Paragraph("תרופות", h2_style))
