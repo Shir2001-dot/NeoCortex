@@ -42,6 +42,21 @@
 
 <main>
 
+    <!-- PATIENT SEARCH -->
+    <div class="card" id="search-card">
+        <div class="card-header">
+            <div class="card-icon">🔎</div>
+            <h2>חיפוש מטופל קיים</h2>
+        </div>
+        <div class="card-body">
+            <div class="search-row">
+                <input type="text" id="search-input" placeholder="חיפוש לפי שם או מזהה מטופל..." />
+                <button type="button" class="btn btn-outline" id="search-btn">חפש</button>
+            </div>
+            <div id="search-results" class="search-results hidden"></div>
+        </div>
+    </div>
+
     <!-- STEPPER -->
     <div class="stepper">
         <div class="step active" id="step1">
@@ -120,6 +135,12 @@
                     <button type="button" class="btn btn-outline" id="vitals-btn">💾 שמור מדדים</button>
                     <div class="status" id="vitals-status"><span id="vitals-msg"></span></div>
                 </div>
+            </div>
+
+            <!-- TRANSACTION TIMELINE -->
+            <div id="timeline-section" class="hidden">
+                <div class="section-title">📅 טבלת תנועות – היסטוריה רפואית</div>
+                <div id="timeline-content" class="timeline"></div>
             </div>
 
             <div class="actions-row">
