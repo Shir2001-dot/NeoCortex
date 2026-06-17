@@ -1,34 +1,34 @@
 :root {
-    --primary: #00d4ff;
-    --primary-dark: #00a8cc;
-    --critical: #ff4d4d;
-    --critical-bg: rgba(255,77,77,.1);
-    --warning: #ffaa00;
-    --warning-bg: rgba(255,170,0,.1);
-    --info: #00d4ff;
-    --info-bg: rgba(0,212,255,.1);
-    --success: #00e5a0;
-    --success-bg: rgba(0,229,160,.1);
+    --primary: #1a56db;
+    --primary-dark: #1e429f;
+    --critical: #c81e1e;
+    --critical-bg: #fdf2f2;
+    --warning: #b45309;
+    --warning-bg: #fffbeb;
+    --info: #1e429f;
+    --info-bg: #ebf5ff;
+    --success: #046c4e;
+    --success-bg: #f3faf7;
     --bg: transparent;
-    --card: rgba(10,20,40,.7);
-    --text: #e8f4ff;
-    --text-secondary: #94b8d4;
-    --muted: #4a6b8a;
-    --border: rgba(0,212,255,.15);
-    --shadow: 0 4px 24px rgba(0,0,0,.4);
-    --shadow-md: 0 8px 32px rgba(0,0,0,.5);
-    --radius: 12px;
+    --card: rgba(255,255,255,.88);
+    --text: #111928;
+    --text-secondary: #4b5563;
+    --muted: #9ca3af;
+    --border: #e5e7eb;
+    --shadow: 0 4px 24px rgba(0,0,0,.08);
+    --shadow-md: 0 8px 32px rgba(0,0,0,.12);
+    --radius: 10px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { background: #020810; }
+html { background: #f0f4f8; }
 
 #neural-bg {
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: linear-gradient(135deg, #020810 0%, #050d1f 50%, #020c18 100%);
+    background: linear-gradient(135deg, #eef2ff 0%, #f0f7ff 50%, #e8f4ff 100%);
     z-index: -1;
 }
 
@@ -42,15 +42,13 @@ body {
 
 /* ─── HEADER ─── */
 header {
-    background: rgba(2,8,20,.85);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(0,212,255,.2);
+    background: linear-gradient(135deg, #1e3a5f 0%, #1a56db 100%);
     padding: 0 2rem;
     height: 64px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 2px 30px rgba(0,212,255,.08);
+    box-shadow: 0 2px 8px rgba(0,0,0,.2);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -203,12 +201,12 @@ main {
 
 /* ─── CARD ─── */
 .card {
-    background: rgba(10,20,40,.7);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(0,212,255,.15);
+    background: rgba(255,255,255,.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,.9);
     border-radius: var(--radius);
-    box-shadow: 0 8px 32px rgba(0,0,0,.4), inset 0 1px 0 rgba(0,212,255,.08);
+    box-shadow: 0 4px 24px rgba(0,0,0,.08);
     overflow: hidden;
 }
 
@@ -337,12 +335,11 @@ input[type="file"]:hover { border-color: var(--primary); }
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #00d4ff, #0099cc);
-    color: #020810;
-    box-shadow: 0 0 20px rgba(0,212,255,.3);
+    background: var(--primary);
+    color: white;
 }
 
-.btn-primary:hover { background: linear-gradient(135deg, #00eaff, #00b8e6); box-shadow: 0 0 30px rgba(0,212,255,.5); }
+.btn-primary:hover { background: var(--primary-dark); }
 .btn-primary:disabled { opacity: 0.55; cursor: default; }
 
 .btn-secondary {
