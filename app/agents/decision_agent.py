@@ -60,7 +60,7 @@ def evaluate_patient(record: PatientRecord, history: list = None) -> DecisionRes
 
     response = client.messages.create(
         model=MODEL,
-        max_tokens=4096,
+        max_tokens=2048,
         system=SYSTEM_PROMPT,
         messages=[
             {

@@ -30,7 +30,7 @@ def generate_session_summary(patient_name: str, notes: str, previous_summary: st
 
     response = client.messages.create(
         model=MODEL,
-        max_tokens=2048,
+        max_tokens=1024,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": context}],
     )
