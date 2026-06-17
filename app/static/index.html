@@ -187,12 +187,12 @@ function draw() {
             const dy = nodes[i].y - nodes[j].y;
             const dist = Math.sqrt(dx*dx + dy*dy);
             if (dist < 160) {
-                const alpha = (1 - dist/160) * 0.35;
+                const alpha = (1 - dist/160) * 0.18;
                 ctx.beginPath();
                 ctx.moveTo(nodes[i].x, nodes[i].y);
                 ctx.lineTo(nodes[j].x, nodes[j].y);
-                ctx.strokeStyle = `rgba(0, 212, 255, ${alpha})`;
-                ctx.lineWidth = 0.8;
+                ctx.strokeStyle = `rgba(26, 86, 219, ${alpha})`;
+                ctx.lineWidth = 0.7;
                 ctx.stroke();
             }
         }
@@ -203,10 +203,10 @@ function draw() {
         n.pulse += 0.02;
         const glow = (Math.sin(n.pulse) + 1) * 0.5;
         ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r + glow, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0, 212, 255, ${0.5 + glow * 0.5})`;
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = "#00d4ff";
+        ctx.arc(n.x, n.y, n.r + glow * 0.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(26, 86, 219, ${0.25 + glow * 0.25})`;
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = "rgba(26,86,219,0.3)";
         ctx.fill();
         ctx.shadowBlur = 0;
 
