@@ -350,88 +350,83 @@ async def get_patient_transactions(patient_id: str, user: dict = Depends(require
     return get_transactions(patient_id)
 
 
-@app.post("/patients/{patient_id}/export-pdf")
-async def export_pdf(patient_id: str, user: dict = Depends(require_permission("view_records"))):
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.units import cm
-    from reportlab.lib import colors
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.pdfbase.ttfonts import TTFont
-
+@app.get("/patients/{patient_id}/print")
+async def print_patient(patient_id: str, user: dict = Depends(require_permission("view_records"))):
     record = get_record(patient_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Patient not found")
 
-    buf = io.BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=A4,
-                            rightMargin=2*cm, leftMargin=2*cm,
-                            topMargin=2*cm, bottomMargin=2*cm)
+    def row(label: str, value) -> str:
+        if not value:
+            return ""
+        import html as html_mod
+        return f'<div class="field"><span class="label">{html_mod.escape(label)}</span><span class="value">{html_mod.escape(str(value))}</span></div>'
 
-    styles = getSampleStyleSheet()
-    title_style = ParagraphStyle("title", parent=styles["Title"], fontSize=18, spaceAfter=6)
-    h2_style    = ParagraphStyle("h2", parent=styles["Heading2"], fontSize=12, spaceAfter=4, textColor=colors.HexColor("#1a56db"))
-    body_style  = ParagraphStyle("body", parent=styles["Normal"], fontSize=10, leading=14)
-    label_style = ParagraphStyle("label", parent=styles["Normal"], fontSize=9,
-                                 textColor=colors.HexColor("#6b7280"), leading=13)
+    def section(title: str, content: str) -> str:
+        if not content.strip():
+            return ""
+        return f'<section><h2>{title}</h2>{content}</section>'
 
-    def section(title, items):
-        elems = [Paragraph(title, h2_style), HRFlowable(width="100%", thickness=0.5,
-                 color=colors.HexColor("#e5e7eb"), spaceAfter=6)]
-        for label, value in items:
-            if value:
-                elems.append(Paragraph(label, label_style))
-                elems.append(Paragraph(str(value), body_style))
-                elems.append(Spacer(1, 4))
-        return elems
+    def bullet_list(items) -> str:
+        import html as html_mod
+        if not items:
+            return ""
+        return "<ul>" + "".join(f"<li>{html_mod.escape(i)}</li>" for i in items) + "</ul>"
 
-    story = []
-    story.append(Paragraph("NeoCortex AI — תיק מטופל", title_style))
-    story.append(Paragraph(f"ת.ז: {patient_id}  |  הופק: {datetime.now().strftime('%d/%m/%Y %H:%M')}", label_style))
-    story.append(Spacer(1, 0.4*cm))
+    import html as html_mod
 
-    story += section("פרטים אישיים", [
-        ("שם מלא", record.full_name),
-        ("תאריך לידה", record.date_of_birth),
-        ("מין", record.gender),
-        ("תלונה עיקרית", record.chief_complaint),
-    ])
-
-
-    if record.medications:
-        story.append(Paragraph("תרופות", h2_style))
-        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e5e7eb"), spaceAfter=6))
-        for m in record.medications:
-            story.append(Paragraph(f"• {m}", body_style))
-        story.append(Spacer(1, 0.3*cm))
-
+    vitals_html = ""
     if record.vitals:
         v = record.vitals
-        story += section("מדדים חיוניים", [
-            ("דופק", f"{v.heart_rate} bpm" if v.heart_rate else None),
-            ("לחץ דם", f"{v.systolic_bp}/{v.diastolic_bp} mmHg" if v.systolic_bp else None),
-            ("טמפרטורה", f"{v.temperature_celsius} °C" if v.temperature_celsius else None),
-            ("חמצן בדם", f"{v.spo2_percent}%" if v.spo2_percent else None),
-        ])
+        vitals_html = section("מדדים חיוניים", (
+            row("דופק", f"{v.heart_rate} bpm" if v.heart_rate else None) +
+            row("לחץ דם", f"{v.systolic_bp}/{v.diastolic_bp} mmHg" if v.systolic_bp and v.diastolic_bp else None) +
+            row("טמפרטורה", f"{v.temperature_celsius} °C" if v.temperature_celsius else None) +
+            row("חמצן בדם", f"{v.spo2_percent}%" if v.spo2_percent else None)
+        ))
 
-    if record.allergies:
-        story.append(Paragraph("אלרגיות", h2_style))
-        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e5e7eb"), spaceAfter=6))
-        for a in record.allergies:
-            story.append(Paragraph(f"• {a}", body_style))
-        story.append(Spacer(1, 0.3*cm))
+    now = datetime.now().strftime("%d/%m/%Y %H:%M")
+    html_content = f"""<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>תיק מטופל — {html_mod.escape(patient_id)}</title>
+<style>
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{ font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #111; direction: rtl; padding: 24px; }}
+  h1 {{ font-size: 20px; margin-bottom: 4px; }}
+  .meta {{ color: #666; font-size: 11px; margin-bottom: 20px; }}
+  section {{ margin-bottom: 18px; page-break-inside: avoid; }}
+  h2 {{ font-size: 14px; color: #1a56db; border-bottom: 1px solid #e5e7eb; padding-bottom: 3px; margin-bottom: 8px; }}
+  .field {{ display: flex; gap: 8px; margin-bottom: 5px; }}
+  .label {{ color: #6b7280; min-width: 120px; font-size: 11px; }}
+  .value {{ flex: 1; }}
+  ul {{ padding-right: 18px; }}
+  li {{ margin-bottom: 3px; }}
+  .disclaimer {{ font-size: 10px; color: #9ca3af; border-top: 1px solid #e5e7eb; margin-top: 24px; padding-top: 8px; }}
+  @media print {{
+    body {{ padding: 0; }}
+    button {{ display: none; }}
+  }}
+</style>
+</head>
+<body>
+<h1>NeoCortex AI — תיק מטופל</h1>
+<div class="meta">ת.ז: {html_mod.escape(patient_id)} &nbsp;|&nbsp; הופק: {now}</div>
+{section("פרטים אישיים", row("שם מלא", record.full_name) + row("תאריך לידה", record.date_of_birth) + row("מין", record.gender) + row("תלונה עיקרית", record.chief_complaint))}
+{section("תרופות", bullet_list(record.medications))}
+{vitals_html}
+{section("אלרגיות", bullet_list(record.allergies))}
+{section("היסטוריה רפואית", bullet_list(record.medical_history))}
+{section("תסמינים", bullet_list(record.symptoms))}
+<div class="disclaimer">מסמך זה הופק למטרות עיון בלבד ואינו תחליף לשיפוט קליני מקצועי.</div>
+<script>window.onload = function() {{ window.print(); }}</script>
+</body>
+</html>"""
 
-    story += section("רקע רפואי", [
-        ("היסטוריה רפואית", "\n".join(record.medical_history) if record.medical_history else None),
-    ])
-
-    doc.build(story)
-    buf.seek(0)
     log_action(user["id_number"], "export_pdf", user_name=user.get("full_name"),
                clinic_id=user.get("clinic_id"), patient_id=patient_id)
-    return StreamingResponse(buf, media_type="application/pdf",
-                             headers={"Content-Disposition": f"attachment; filename=patient-{patient_id}.pdf"})
+    return Response(content=html_content, media_type="text/html; charset=utf-8")
 
 
 @app.patch("/patients/{patient_id}/vitals", response_model=PatientRecord)
