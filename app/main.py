@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.agents.decision_agent import evaluate_patient
 from app.agents.ingestion_agent import extract_patient_data
+from app.agents.summary_agent import generate_session_summary
 from app.models import (
     DecisionResult,
     IngestPdfRequest,
@@ -14,6 +15,8 @@ from app.models import (
     PatientMaster,
     PatientRecord,
     PatientTransaction,
+    SessionSummaryRequest,
+    SessionSummaryResult,
     VitalSigns,
     VitalsUpdateRequest,
 )
@@ -116,6 +119,26 @@ async def update_vitals(patient_id: str, vitals: VitalsUpdateRequest) -> Patient
     record.vitals = updated
     save_record(record)
     return record
+
+
+@app.post("/patients/{patient_id}/session-summary", response_model=SessionSummaryResult)
+async def session_summary(patient_id: str, request: SessionSummaryRequest) -> SessionSummaryResult:
+    record = get_record(patient_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    if not request.notes or not request.notes.strip():
+        raise HTTPException(status_code=400, detail="Notes cannot be empty")
+    transactions = get_transactions(patient_id)
+    previous_summary = None
+    if len(transactions) > 1:
+        prev = transactions[1].extracted
+        previous_summary = prev.chief_complaint
+    summary = generate_session_summary(
+        patient_name=record.full_name or patient_id,
+        notes=request.notes,
+        previous_summary=previous_summary,
+    )
+    return SessionSummaryResult(patient_id=patient_id, summary=summary)
 
 
 @app.post("/decision/{patient_id}", response_model=DecisionResult)

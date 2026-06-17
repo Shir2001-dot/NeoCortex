@@ -91,6 +91,15 @@ class PatientTransaction(BaseModel):
     extracted: PatientRecord
 
 
+class SessionSummaryRequest(BaseModel):
+    notes: str
+
+
+class SessionSummaryResult(BaseModel):
+    patient_id: str
+    summary: str
+
+
 class PatientMaster(BaseModel):
     patient_id: str
     full_name: Optional[str] = None

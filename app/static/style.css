@@ -597,6 +597,53 @@ input[type="file"]:hover { border-color: var(--primary); }
     color: var(--text);
 }
 
+/* ─── MODAL ─── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.35);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal-overlay.hidden { display: none; }
+
+.modal-box {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 16px 48px rgba(0,0,0,.18);
+    width: 100%;
+    max-width: 560px;
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--muted);
+    padding: 0.25rem;
+    border-radius: 4px;
+}
+
+.modal-close:hover { background: #f3f4f6; color: var(--text); }
+
+.modal-body { padding: 1.25rem; }
+
 /* ─── DISCLAIMER ─── */
 .disclaimer {
     background: #fffbeb;

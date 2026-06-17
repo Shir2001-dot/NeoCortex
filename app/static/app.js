@@ -2,12 +2,14 @@
 const ingestBtn   = document.getElementById("ingest-btn");
 const decisionBtn = document.getElementById("decision-btn");
 const vitalsBtn   = document.getElementById("vitals-btn");
+const summaryBtn  = document.getElementById("summary-btn");
 const recordCard  = document.getElementById("record-card");
 const decisionCard = document.getElementById("decision-card");
 const recordContent = document.getElementById("record-content");
 const decisionContent = document.getElementById("decision-content");
 const timelineSection = document.getElementById("timeline-section");
 const timelineContent = document.getElementById("timeline-content");
+const summaryModal = document.getElementById("summary-modal");
 
 let currentPatientId = null;
 let currentTab = "text";
@@ -263,6 +265,56 @@ vitalsBtn.addEventListener("click", async () => {
     } finally {
         vitalsBtn.disabled = false;
     }
+});
+
+// ─── Session Summary ───
+summaryBtn.addEventListener("click", () => {
+    if (!currentPatientId) return;
+    document.getElementById("summary-notes").value = "";
+    document.getElementById("summary-result").classList.add("hidden");
+    setStatus("summary", "", "");
+    summaryModal.classList.remove("hidden");
+});
+
+document.getElementById("summary-close").addEventListener("click", () => {
+    summaryModal.classList.add("hidden");
+});
+
+summaryModal.addEventListener("click", (e) => {
+    if (e.target === summaryModal) summaryModal.classList.add("hidden");
+});
+
+document.getElementById("summary-generate-btn").addEventListener("click", async () => {
+    const notes = document.getElementById("summary-notes").value.trim();
+    if (!notes) { setStatus("summary", "נא להכניס הערות מהפגישה", "error"); return; }
+
+    setStatus("summary", "מייצר סיכום...", "loading");
+    document.getElementById("summary-generate-btn").disabled = true;
+
+    try {
+        const res = await fetch(`/patients/${encodeURIComponent(currentPatientId)}/session-summary`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ notes }),
+        });
+        if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
+        const data = await res.json();
+        document.getElementById("summary-text").textContent = data.summary;
+        document.getElementById("summary-result").classList.remove("hidden");
+        setStatus("summary", "", "");
+    } catch (e) {
+        setStatus("summary", e.message, "error");
+    } finally {
+        document.getElementById("summary-generate-btn").disabled = false;
+    }
+});
+
+document.getElementById("summary-copy-btn").addEventListener("click", () => {
+    const text = document.getElementById("summary-text").textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        document.getElementById("summary-copy-btn").textContent = "✓ הועתק";
+        setTimeout(() => { document.getElementById("summary-copy-btn").textContent = "📋 העתק"; }, 2000);
+    });
 });
 
 // ─── Decision ───
