@@ -80,7 +80,7 @@ function renderRecord(r) {
             ${infoCell("מגדר", r.gender)}
             ${infoCell("דופק", v.heart_rate ? v.heart_rate + " bpm" : null)}
             ${infoCell('ל"ד', bp)}
-            ${infoCell("סטורציה", v.spo2_percent ? v.spo2_percent + "%" : null)}
+            ${infoCell("חמצן בדם SpO2", v.spo2_percent ? v.spo2_percent + "%" : null)}
         </div>
         <table class="clinical-table" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:1rem">
             ${clinicalRow("תלונה עיקרית", esc(r.chief_complaint) || "—")}
