@@ -157,11 +157,27 @@
                             </div>
                         </div>
                         <div id="summary-result" class="hidden">
-                            <div class="section-title" style="margin-top:1rem">סיכום שנוצר</div>
-                            <div id="summary-text" class="summary-box"></div>
-                            <div class="actions-row" style="margin-top:.75rem;justify-content:flex-end">
-                                <button type="button" class="btn btn-outline" id="summary-copy-btn">📋 העתק</button>
+                            <div class="medical-doc" id="summary-doc">
+                                <div class="medical-doc-header">
+                                    <div class="medical-doc-title">סיכום ביקור רפואי</div>
+                                    <div class="medical-doc-meta">
+                                        <span id="doc-patient-name"></span>
+                                        <span id="doc-date"></span>
+                                    </div>
+                                    <div class="medical-doc-divider"></div>
+                                </div>
+                                <div id="summary-text" class="medical-doc-body"></div>
+                                <div class="medical-doc-divider" style="margin-top:1.25rem"></div>
+                                <div class="medical-doc-footer">
+                                    <span>חתימת הרופא:</span>
+                                    <input type="text" id="doctor-name" placeholder="ד״ר שם פמיליה" style="border:none;border-bottom:1px solid #9ca3af;outline:none;width:180px;background:transparent;font-size:.88rem;padding:.1rem .3rem" />
+                                </div>
                             </div>
+                            <div class="actions-row" style="margin-top:.75rem;justify-content:flex-end;gap:.5rem">
+                                <button type="button" class="btn btn-outline" id="summary-copy-btn">📋 העתק</button>
+                                <button type="button" class="btn btn-primary" id="summary-save-btn">💾 שמור בתיק</button>
+                            </div>
+                            <div class="status" id="save-summary-status"><span id="save-summary-msg"></span></div>
                         </div>
                     </div>
                 </div>

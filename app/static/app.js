@@ -12,6 +12,7 @@ const timelineContent = document.getElementById("timeline-content");
 const summaryModal = document.getElementById("summary-modal");
 
 let currentPatientId = null;
+let currentRecord = null;
 let currentTab = "text";
 
 // ─── Tab switch ───
@@ -214,6 +215,7 @@ ingestBtn.addEventListener("click", async () => {
 
         const tx = await res.json();
         currentPatientId = tx.patient_id;
+        currentRecord = tx.extracted;
         const titleEl = document.getElementById("record-card-title");
         if (titleEl) titleEl.textContent = `נתוני מטופל · ת.ז ${tx.patient_id}`;
         renderRecord(tx.extracted);
@@ -375,7 +377,10 @@ document.getElementById("summary-generate-btn").addEventListener("click", async 
         if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
         const data = await res.json();
         document.getElementById("summary-text").textContent = data.summary;
+        document.getElementById("doc-patient-name").textContent = "מטופל: " + (currentRecord?.full_name || "—");
+        document.getElementById("doc-date").textContent = "תאריך: " + new Date().toLocaleDateString("he-IL");
         document.getElementById("summary-result").classList.remove("hidden");
+        document.getElementById("save-summary-msg").textContent = "";
         setStatus("summary", "", "");
     } catch (e) {
         setStatus("summary", e.message, "error");
@@ -390,6 +395,35 @@ document.getElementById("summary-copy-btn").addEventListener("click", () => {
         document.getElementById("summary-copy-btn").textContent = "✓ הועתק";
         setTimeout(() => { document.getElementById("summary-copy-btn").textContent = "📋 העתק"; }, 2000);
     });
+});
+
+document.getElementById("summary-save-btn").addEventListener("click", async () => {
+    const summary = document.getElementById("summary-text").textContent;
+    const doctorName = document.getElementById("doctor-name").value.trim();
+    if (!summary) return;
+
+    document.getElementById("summary-save-btn").disabled = true;
+    document.getElementById("save-summary-msg").textContent = "שומר...";
+    document.getElementById("save-summary-msg").className = "loading";
+
+    try {
+        const res = await fetch(`/patients/${encodeURIComponent(currentPatientId)}/save-summary`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ summary, doctor_name: doctorName || null }),
+        });
+        if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
+        document.getElementById("save-summary-msg").textContent = "✓ נשמר בתיק המטופל";
+        document.getElementById("save-summary-msg").className = "success";
+        // Refresh timeline
+        const txRes = await fetch(`/patients/${encodeURIComponent(currentPatientId)}/transactions`);
+        if (txRes.ok) renderTimeline(await txRes.json(), null);
+    } catch (e) {
+        document.getElementById("save-summary-msg").textContent = e.message;
+        document.getElementById("save-summary-msg").className = "error";
+    } finally {
+        document.getElementById("summary-save-btn").disabled = false;
+    }
 });
 
 // ─── Decision ───

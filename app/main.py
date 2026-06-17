@@ -15,6 +15,7 @@ from app.models import (
     PatientMaster,
     PatientRecord,
     PatientTransaction,
+    SaveSummaryRequest,
     SessionSummaryRequest,
     SessionSummaryResult,
     VitalSigns,
@@ -139,6 +140,29 @@ async def session_summary(patient_id: str, request: SessionSummaryRequest) -> Se
         previous_summary=previous_summary,
     )
     return SessionSummaryResult(patient_id=patient_id, summary=summary)
+
+
+@app.post("/patients/{patient_id}/save-summary", response_model=PatientTransaction)
+async def save_summary(patient_id: str, request: SaveSummaryRequest) -> PatientTransaction:
+    record = get_record(patient_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    note = f"סיכום ביקור {today}"
+    if request.doctor_name:
+        note += f" | ד\"ר {request.doctor_name}"
+    note += f"\n\n{request.summary}"
+    visit_record = record.model_copy(update={"chief_complaint": note, "source": "visit"})
+    tx = PatientTransaction(
+        transaction_id=str(uuid.uuid4()),
+        patient_id=patient_id,
+        date=today,
+        transaction_type="visit",
+        raw_text=request.summary,
+        extracted=visit_record,
+    )
+    save_transaction(tx)
+    return tx
 
 
 @app.post("/decision/{patient_id}", response_model=DecisionResult)

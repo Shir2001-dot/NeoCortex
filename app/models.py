@@ -100,6 +100,11 @@ class SessionSummaryResult(BaseModel):
     summary: str
 
 
+class SaveSummaryRequest(BaseModel):
+    summary: str
+    doctor_name: Optional[str] = None
+
+
 class PatientMaster(BaseModel):
     patient_id: str
     full_name: Optional[str] = None
