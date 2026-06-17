@@ -59,6 +59,14 @@
 </header>
 
 <main>
+    <!-- Tabs -->
+    <div style="display:flex;gap:.5rem;margin-bottom:1rem">
+        <button class="btn btn-primary" id="tab-users-btn" onclick="showTab('users')">👥 משתמשים</button>
+        <button class="btn btn-outline" id="tab-audit-btn" onclick="showTab('audit')">📋 לוג פעולות</button>
+    </div>
+
+    <!-- Users tab -->
+    <div id="tab-users">
     <div class="card">
         <div class="card-header">
             <div class="card-icon">🏥</div>
@@ -88,6 +96,34 @@
             </div>
             <div id="table-msg" style="display:none" class="msg"></div>
         </div>
+    </div>
+    </div>
+
+    <!-- Audit log tab -->
+    <div id="tab-audit" style="display:none">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon">📋</div>
+            <div><h2>לוג פעולות</h2></div>
+        </div>
+        <div class="card-body">
+            <div style="overflow-x:auto">
+                <table id="audit-table">
+                    <thead>
+                        <tr>
+                            <th>תאריך ושעה</th>
+                            <th>משתמש</th>
+                            <th>פעולה</th>
+                            <th>מטופל</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-tbody">
+                        <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:1.5rem">טוען...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
     </div>
 </main>
 
@@ -338,6 +374,47 @@ document.getElementById("logout-btn").addEventListener("click", async () => {
     await api("/auth/logout", {method:"POST"});
     location.href = "/login";
 });
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+const ACTION_LABELS = {
+    login: "🔐 כניסה למערכת",
+    view_patient: "👁️ צפייה בתיק",
+    ingest: "📋 קליטת מסמך",
+    clinical_analysis: "🩺 ניתוח קליני",
+    drug_interactions: "⚠️ אינטראקציות",
+    session_summary: "📝 סיכום פגישה",
+};
+
+function showTab(tab) {
+    document.getElementById("tab-users").style.display = tab === "users" ? "" : "none";
+    document.getElementById("tab-audit").style.display = tab === "audit" ? "" : "none";
+    document.getElementById("tab-users-btn").className = tab === "users" ? "btn btn-primary" : "btn btn-outline";
+    document.getElementById("tab-audit-btn").className = tab === "audit" ? "btn btn-primary" : "btn btn-outline";
+    if (tab === "audit") loadAuditLog();
+}
+
+async function loadAuditLog() {
+    const tbody = document.getElementById("audit-tbody");
+    try {
+        const res = await fetch("/admin/audit-log");
+        if (!res.ok) throw new Error();
+        const rows = await res.json();
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:1.5rem">אין רשומות</td></tr>';
+            return;
+        }
+        tbody.innerHTML = rows.map(r => `
+            <tr>
+                <td style="white-space:nowrap;font-size:.8rem">${r.timestamp}</td>
+                <td>${r.user_name}</td>
+                <td>${ACTION_LABELS[r.action] || r.action}</td>
+                <td style="font-size:.82rem;color:var(--muted)">${r.patient_id}</td>
+            </tr>
+        `).join("");
+    } catch {
+        tbody.innerHTML = '<tr><td colspan="4" style="color:#c81e1e;text-align:center;padding:1rem">שגיאה בטעינה</td></tr>';
+    }
+}
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async () => {

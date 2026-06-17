@@ -99,6 +99,19 @@ class PatientTransactionRow(Base):
     doctor_id_number = Column(String, nullable=True)
 
 
+class AuditLogRow(Base):
+    __tablename__ = "audit_log"
+
+    id = Column(String, primary_key=True)
+    timestamp = Column(DateTime, nullable=False, default=datetime.utcnow)
+    user_id = Column(String, nullable=False)
+    user_name = Column(String, nullable=True)
+    clinic_id = Column(String, nullable=True)
+    action = Column(String, nullable=False)   # e.g. "view_patient", "ingest", "decision"
+    patient_id = Column(String, nullable=True)
+    detail = Column(Text, nullable=True)
+
+
 Base.metadata.create_all(engine)
 
 
@@ -344,5 +357,42 @@ def list_patients() -> list[PatientMaster]:
                 gender=_decrypt(row.gender) if row.gender else None,
                 transactions=[],
             )
+            for row in rows
+        ]
+
+
+def log_action(user_id: str, action: str, user_name: str | None = None,
+               clinic_id: str | None = None, patient_id: str | None = None,
+               detail: str | None = None) -> None:
+    import uuid
+    with SessionLocal() as session:
+        session.add(AuditLogRow(
+            id=str(uuid.uuid4()),
+            timestamp=datetime.utcnow(),
+            user_id=user_id,
+            user_name=user_name,
+            clinic_id=clinic_id,
+            action=action,
+            patient_id=patient_id,
+            detail=detail,
+        ))
+        session.commit()
+
+
+def get_audit_log(clinic_id: str, limit: int = 200) -> list[dict]:
+    with SessionLocal() as session:
+        rows = (session.query(AuditLogRow)
+                .filter_by(clinic_id=clinic_id)
+                .order_by(AuditLogRow.timestamp.desc())
+                .limit(limit)
+                .all())
+        return [
+            {
+                "timestamp": row.timestamp.strftime("%Y-%m-%d %H:%M"),
+                "user_name": row.user_name or row.user_id,
+                "action": row.action,
+                "patient_id": row.patient_id or "—",
+                "detail": row.detail or "",
+            }
             for row in rows
         ]

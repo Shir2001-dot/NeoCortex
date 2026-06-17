@@ -41,6 +41,7 @@ from app.storage import (
     SessionLocal,
     create_user,
     delete_user,
+    get_audit_log,
     get_clinic,
     get_master,
     get_patients_by_clinic,
@@ -49,6 +50,7 @@ from app.storage import (
     get_user_by_id,
     get_users_by_clinic,
     list_patients,
+    log_action,
     save_record,
     save_transaction,
     seed_demo_data,
@@ -91,6 +93,7 @@ async def do_login(body: dict):
             "permissions": perms,
         }
         token = create_token(token_data)
+        log_action(user.id_number, "login", user_name=user.full_name, clinic_id=user.clinic_id)
         response = JSONResponse(content={
             "id_number": user.id_number,
             "full_name": user.full_name,
@@ -170,6 +173,11 @@ async def get_clinic_info(user: dict = Depends(require_admin)):
         if not clinic:
             raise HTTPException(status_code=404, detail="קליניקה לא נמצאה")
         return {"id": clinic.id, "name": clinic.name}
+
+
+@app.get("/admin/audit-log")
+async def admin_audit_log(user: dict = Depends(require_admin)):
+    return get_audit_log(user["clinic_id"])
 
 
 @app.get("/admin/users")
@@ -291,6 +299,8 @@ async def ingest_text(request: IngestTextRequest, user: dict = Depends(require_p
     upsert_master(record.patient_id, record.full_name, record.date_of_birth, record.gender)
     tx = _build_transaction(record, request.text)
     save_transaction(tx, clinic_id=tags["clinic_id"], doctor_id_number=tags["doctor_id_number"])
+    log_action(user["id_number"], "ingest", user_name=user.get("full_name"),
+               clinic_id=tags["clinic_id"], patient_id=request.patient_id)
     return tx
 
 
@@ -329,6 +339,8 @@ async def get_patient(patient_id: str, user: dict = Depends(require_permission("
     record = get_record(patient_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Patient not found")
+    log_action(user["id_number"], "view_patient", user_name=user.get("full_name"),
+               clinic_id=user.get("clinic_id"), patient_id=patient_id)
     return record
 
 
@@ -399,15 +411,19 @@ async def run_decision(patient_id: str, user: dict = Depends(require_permission(
         raise HTTPException(status_code=404, detail="Patient not found")
     transactions = get_transactions(patient_id)
     history = transactions[1:] if len(transactions) > 1 else []
+    log_action(user["id_number"], "clinical_analysis", user_name=user.get("full_name"),
+               clinic_id=user.get("clinic_id"), patient_id=patient_id)
     return evaluate_patient(record, history=history)
 
 
 @app.post("/patients/{patient_id}/interactions", response_model=InteractionsResult)
 async def run_interactions(
     patient_id: str,
-    _user: dict = Depends(require_permission("drug_interactions")),
+    user: dict = Depends(require_permission("drug_interactions")),
 ) -> InteractionsResult:
     record = get_record(patient_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Patient not found")
+    log_action(user["id_number"], "drug_interactions", user_name=user.get("full_name"),
+               clinic_id=user.get("clinic_id"), patient_id=patient_id)
     return check_interactions(patient_id, record.medications)
