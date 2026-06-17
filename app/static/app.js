@@ -1,15 +1,12 @@
 // ─── Elements ───
-const ingestBtn   = document.getElementById("ingest-btn");
-const decisionBtn = document.getElementById("decision-btn");
-const vitalsBtn   = document.getElementById("vitals-btn");
-const summaryBtn  = document.getElementById("summary-btn");
+const ingestBtn       = document.getElementById("ingest-btn");
+const decisionBtn     = document.getElementById("decision-btn");
+const vitalsBtn       = document.getElementById("vitals-btn");
 const interactionsBtn = document.getElementById("interactions-btn");
-const printBtn    = document.getElementById("print-btn");
-const searchBtn   = document.getElementById("search-btn");
-const recordCard  = document.getElementById("record-card");
-const decisionCard = document.getElementById("decision-card");
-const interactionsCard = document.getElementById("interactions-card");
-const recordContent = document.getElementById("record-content");
+const printBtn        = document.getElementById("print-btn");
+const searchBtn       = document.getElementById("search-btn");
+const decisionCard    = document.getElementById("decision-card");
+const recordContent   = document.getElementById("record-content");
 const decisionContent = document.getElementById("decision-content");
 const interactionsContent = document.getElementById("interactions-content");
 const timelineSection = document.getElementById("timeline-section");
@@ -18,6 +15,30 @@ const timelineContent = document.getElementById("timeline-content");
 let currentPatientId = null;
 let currentRecord = null;
 let currentTab = "text";
+
+// ─── Sidebar Navigation ───
+function showView(viewName) {
+    document.querySelectorAll(".view").forEach(v => v.classList.add("hidden"));
+    document.querySelectorAll(".sidebar-item").forEach(b => b.classList.remove("active"));
+    const view = document.getElementById("view-" + viewName);
+    if (view) view.classList.remove("hidden");
+    const btn = document.getElementById("nav-" + viewName);
+    if (btn) btn.classList.add("active");
+}
+
+document.querySelectorAll(".sidebar-item[data-view]").forEach(btn => {
+    btn.addEventListener("click", () => showView(btn.dataset.view));
+});
+
+function unlockClinicalNav() {
+    document.querySelectorAll(".sidebar-clinical").forEach(el => el.classList.remove("hidden"));
+    document.getElementById("sidebar-patient").classList.remove("hidden");
+}
+
+function updateSidebarPatient(name, id) {
+    document.getElementById("sidebar-patient-name").textContent = name || "—";
+    document.getElementById("sidebar-patient-id").textContent = id || "";
+}
 
 // ─── Tab switch ───
 document.getElementById("tab-text").addEventListener("click", () => switchTab("text"));
@@ -31,15 +52,6 @@ function switchTab(tab) {
     document.getElementById("tab-pdf").classList.toggle("active", tab === "pdf");
 }
 
-// ─── Stepper ───
-function setStep(n) {
-    [1,2,3].forEach(i => {
-        const el = document.getElementById("step" + i);
-        el.classList.remove("active","done");
-        if (i < n)  el.classList.add("done");
-        if (i === n) el.classList.add("active");
-    });
-}
 
 // ─── Helpers ───
 function esc(str) {
@@ -221,10 +233,11 @@ ingestBtn.addEventListener("click", async () => {
         currentPatientId = tx.patient_id;
         currentRecord = tx.extracted;
         const titleEl = document.getElementById("record-card-title");
-        if (titleEl) titleEl.textContent = `נתוני מטופל · ת.ז ${tx.patient_id}`;
+        if (titleEl) titleEl.textContent = `תיק מטופל · ת.ז ${tx.patient_id}`;
         renderRecord(tx.extracted);
-        recordCard.classList.remove("hidden");
-        setStep(2);
+        unlockClinicalNav();
+        updateSidebarPatient(tx.extracted.full_name, tx.patient_id);
+        showView("record");
         setStatus("ingest","הופק בהצלחה ✓","success");
 
         // Load full transaction history
@@ -476,12 +489,11 @@ searchBtn.addEventListener("click", async () => {
                     currentPatientId = pid;
                     currentRecord = record;
                     const titleEl = document.getElementById("record-card-title");
-                    if (titleEl) titleEl.textContent = `נתוני מטופל · ת.ז ${pid}`;
+                    if (titleEl) titleEl.textContent = `תיק מטופל · ת.ז ${pid}`;
                     renderRecord(record);
-                    recordCard.classList.remove("hidden");
-                    decisionCard.classList.add("hidden");
-                    interactionsCard.classList.add("hidden");
-                    setStep(2);
+                    unlockClinicalNav();
+                    updateSidebarPatient(record.full_name, pid);
+                    showView("record");
                     if (txRes.ok) {
                         const transactions = await txRes.json();
                         renderTimeline(transactions, null);
@@ -558,7 +570,6 @@ decisionBtn.addEventListener("click", async () => {
         const result = await res.json();
         renderDecision(result);
         decisionCard.classList.remove("hidden");
-        setStep(3);
         setStatus("decision","","");
     } catch (e) {
         setStatus("decision", e.message, "error");
