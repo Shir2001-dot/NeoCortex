@@ -68,7 +68,7 @@ async def ingest_pdf_base64(request: IngestPdfRequest) -> PatientTransaction:
     raw_text = extract_text_from_pdf(file_bytes)
     record = extract_patient_data(request.patient_id, raw_text, source="pdf")
     save_record(record)
-    upsert_master(request.patient_id, record.full_name, record.date_of_birth, record.gender)
+    upsert_master(record.patient_id, record.full_name, record.date_of_birth, record.gender)
     tx = _build_transaction(record, raw_text)
     save_transaction(tx)
     return tx
@@ -78,7 +78,7 @@ async def ingest_pdf_base64(request: IngestPdfRequest) -> PatientTransaction:
 async def ingest_text(request: IngestTextRequest) -> PatientTransaction:
     record = extract_patient_data(request.patient_id, request.text, source="text")
     save_record(record)
-    upsert_master(request.patient_id, record.full_name, record.date_of_birth, record.gender)
+    upsert_master(record.patient_id, record.full_name, record.date_of_birth, record.gender)
     tx = _build_transaction(record, request.text)
     save_transaction(tx)
     return tx
