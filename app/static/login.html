@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NeoCortex AI – כניסה</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <style>
+        body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+        .login-box {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,.12);
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 380px;
+            border: 1px solid var(--border);
+        }
+        .login-logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .login-logo .logo-neo { font-size:1.8rem; font-weight:900; letter-spacing:4px; color:#1a56db; }
+        .login-logo .logo-cortex { font-size:1.8rem; font-weight:300; letter-spacing:4px; color:#4b9fdb; }
+        .login-logo .logo-sub { font-size:.78rem; color:var(--muted); margin-top:.25rem; }
+        .login-box h2 { font-size:1rem; font-weight:700; margin-bottom:1.25rem; color:var(--text); }
+        .form-group { margin-bottom:1rem; }
+        .form-group label { display:block; font-size:.8rem; font-weight:600; color:var(--text-secondary); margin-bottom:.3rem; }
+        .error-msg { background:#fef2f2; border:1px solid #fca5a5; color:#c81e1e; border-radius:8px; padding:.6rem .9rem; font-size:.85rem; margin-bottom:1rem; }
+        .login-footer { text-align:center; font-size:.75rem; color:var(--muted); margin-top:1.5rem; }
+    </style>
+</head>
+<body>
+<canvas id="neural-bg"></canvas>
+<div class="login-box">
+    <div class="login-logo">
+        <div><span class="logo-neo">NEO</span><span class="logo-cortex">CORTEX</span></div>
+        <div class="logo-sub">מערכת תמיכה קלינית</div>
+    </div>
+    <h2>כניסה למערכת</h2>
+
+    <form method="POST" action="/login">
+        <div id="error-msg" class="error-msg" style="display:none">שם משתמש או סיסמה שגויים</div>
+        <div class="form-group">
+            <label for="username">שם משתמש</label>
+            <input type="text" id="username" name="username" placeholder="doctor / secretary" autocomplete="username" />
+        </div>
+        <div class="form-group">
+            <label for="password">סיסמה</label>
+            <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;margin-top:.5rem">כניסה →</button>
+    </form>
+
+    <div class="login-footer">Beta · לשימוש קליני מורשה בלבד</div>
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+if (params.get("error")) document.getElementById("error-msg").style.display = "block";
+
+// Neural background (same as main app)
+const canvas = document.getElementById("neural-bg");
+const ctx = canvas.getContext("2d");
+let W, H, nodes = [];
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+resize();
+window.addEventListener("resize", resize);
+for (let i = 0; i < 40; i++) nodes.push({ x: Math.random()*W, y: Math.random()*H, vx:(Math.random()-.5)*.3, vy:(Math.random()-.5)*.3, r:Math.random()*2+1, pulse:Math.random()*Math.PI*2 });
+function draw() {
+    ctx.clearRect(0,0,W,H);
+    for (let i=0;i<nodes.length;i++) for (let j=i+1;j<nodes.length;j++) {
+        const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y, d=Math.sqrt(dx*dx+dy*dy);
+        if(d<150){ ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.strokeStyle=`rgba(26,86,219,${(1-d/150)*.12})`; ctx.lineWidth=.7; ctx.stroke(); }
+    }
+    nodes.forEach(n => {
+        n.pulse+=.02; const g=(Math.sin(n.pulse)+1)*.5;
+        ctx.beginPath(); ctx.arc(n.x,n.y,n.r+g*.4,0,Math.PI*2);
+        ctx.fillStyle=`rgba(26,86,219,${.2+g*.2})`; ctx.fill();
+        n.x+=n.vx; n.y+=n.vy;
+        if(n.x<0||n.x>W) n.vx*=-1; if(n.y<0||n.y>H) n.vy*=-1;
+    });
+    requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>

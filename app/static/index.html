@@ -38,7 +38,12 @@
             </div>
         </div>
     </div>
-    <div class="header-badge">Beta · קליני בלבד</div>
+    <div style="display:flex;align-items:center;gap:.75rem">
+        <span class="header-badge">Beta · קליני בלבד</span>
+        <form method="POST" action="/logout" style="margin:0">
+            <button type="submit" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:.3rem .7rem;font-size:.78rem;cursor:pointer">יציאה</button>
+        </form>
+    </div>
 </header>
 
 <main>
