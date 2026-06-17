@@ -56,6 +56,8 @@ def extract_patient_data(patient_id: str, raw_text: str, source: str) -> Patient
         messages=[{"role": "user", "content": raw_text}],
     )
 
+    if not response.content:
+        raise ValueError("Claude API returned an empty response — check that ANTHROPIC_API_KEY is valid")
     extracted = parse_json_response(response.content[0].text)
 
     return PatientRecord(

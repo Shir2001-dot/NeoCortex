@@ -65,6 +65,8 @@ def evaluate_patient(record: PatientRecord, history: list = None) -> DecisionRes
         ],
     )
 
+    if not response.content:
+        raise ValueError("Claude API returned an empty response — check that ANTHROPIC_API_KEY is valid")
     result = parse_json_response(response.content[0].text)
 
     return DecisionResult(patient_id=record.patient_id, **result)
