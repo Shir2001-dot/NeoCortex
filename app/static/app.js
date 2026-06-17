@@ -40,6 +40,14 @@ function resetInactivityTimer() {
     document.addEventListener(evt, resetInactivityTimer, { passive: true })
 );
 resetInactivityTimer();
+
+// Warn before page refresh if patient is open
+window.addEventListener("beforeunload", (e) => {
+    if (currentPatientId) {
+        e.preventDefault();
+        e.returnValue = "";
+    }
+});
 let currentTab = "text";
 
 function networkErrMsg(e) {
