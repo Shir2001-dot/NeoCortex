@@ -69,7 +69,8 @@ async function doLogin() {
             credentials: "include",
         });
         if (res.ok) {
-            location.href = "/";
+            const user = await res.json();
+            location.href = user.role === "admin" ? "/admin" : "/";
         } else {
             document.getElementById("error-msg").style.display = "block";
         }

@@ -567,20 +567,100 @@ decisionBtn.addEventListener("click", async () => {
     }
 });
 
-// ─── Auth / Header ───
+// ─── Auth / Header + Role-based UI ───
+let currentUser = null;
+
 (async () => {
     try {
         const res = await fetch("/auth/me", {credentials: "include"});
         if (res.status === 401) { location.href = "/login"; return; }
-        if (res.ok) {
-            const user = await res.json();
-            const nameEl = document.getElementById("header-user-name");
-            const adminLink = document.getElementById("admin-link");
-            if (nameEl) nameEl.textContent = user.full_name || "";
-            if (adminLink && user.role === "admin") adminLink.style.display = "";
+        if (!res.ok) return;
+        currentUser = await res.json();
+
+        const nameEl = document.getElementById("header-user-name");
+        const adminLink = document.getElementById("admin-link");
+        if (nameEl) nameEl.textContent = currentUser.full_name || "";
+
+        const role = currentUser.role;
+
+        // Admin → redirect to admin panel
+        if (role === "admin") {
+            location.href = "/admin";
+            return;
         }
+
+        // Secretary → hide everything clinical, show read-only patient list
+        if (role === "secretary") {
+            applySecretaryView();
+            return;
+        }
+
+        // Doctor → full UI, show specialty badge
+        if (currentUser.specialty && nameEl) {
+            nameEl.textContent = `${currentUser.full_name} · ${currentUser.specialty}`;
+        }
+
     } catch(e) { /* ignore */ }
 })();
+
+function applySecretaryView() {
+    // Hide ingest card
+    const ingestCard = document.querySelector(".card:has(#ingest-btn)");
+    if (ingestCard) ingestCard.style.display = "none";
+
+    // Hide stepper
+    const stepper = document.querySelector(".stepper");
+    if (stepper) stepper.style.display = "none";
+
+    // Replace search card with a full patient list
+    const searchCard = document.getElementById("search-card");
+    if (searchCard) {
+        searchCard.querySelector(".card-header h2").textContent = "רשימת מטופלים";
+        searchCard.querySelector(".card-body").innerHTML = `
+            <div id="secretary-patient-list" style="margin-top:.5rem"></div>
+        `;
+        loadSecretaryPatientList();
+    }
+}
+
+async function loadSecretaryPatientList() {
+    const listEl = document.getElementById("secretary-patient-list");
+    if (!listEl) return;
+    listEl.innerHTML = `<div style="color:var(--muted);font-size:.85rem">טוען...</div>`;
+    try {
+        const res = await fetch("/patients");
+        if (!res.ok) throw new Error();
+        const patients = await res.json();
+        if (patients.length === 0) {
+            listEl.innerHTML = `<div style="color:var(--muted);font-size:.85rem">אין מטופלים רשומים</div>`;
+            return;
+        }
+        listEl.innerHTML = `
+            <table style="width:100%;border-collapse:collapse;font-size:.87rem">
+                <thead>
+                    <tr style="border-bottom:2px solid var(--border)">
+                        <th style="text-align:right;padding:.5rem .75rem;color:var(--text-secondary);font-weight:700">שם מלא</th>
+                        <th style="text-align:right;padding:.5rem .75rem;color:var(--text-secondary);font-weight:700">ת.ז</th>
+                        <th style="text-align:right;padding:.5rem .75rem;color:var(--text-secondary);font-weight:700">תאריך לידה</th>
+                        <th style="text-align:right;padding:.5rem .75rem;color:var(--text-secondary);font-weight:700">מגדר</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${patients.map(p => `
+                        <tr style="border-bottom:1px solid var(--border)">
+                            <td style="padding:.5rem .75rem;font-weight:600;color:var(--text)">${esc(p.full_name || "ללא שם")}</td>
+                            <td style="padding:.5rem .75rem;color:var(--text-secondary)">${esc(p.patient_id)}</td>
+                            <td style="padding:.5rem .75rem;color:var(--text-secondary)">${esc(p.date_of_birth || "—")}</td>
+                            <td style="padding:.5rem .75rem;color:var(--text-secondary)">${esc(p.gender || "—")}</td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        `;
+    } catch(e) {
+        listEl.innerHTML = `<div style="color:var(--error);font-size:.85rem">שגיאה בטעינת המטופלים</div>`;
+    }
+}
 
 const logoutBtn = document.getElementById("logout-btn");
 if (logoutBtn) {
