@@ -8,42 +8,38 @@ from anthropic import Anthropic
 
 
 def extract_text_from_pdf(file_bytes: bytes) -> str:
-    """Extract text from PDF. Falls back to Claude Vision OCR for scanned PDFs."""
+    """Extract text from PDF. Uses OCR for garbled/scanned PDFs."""
     try:
         text = _extract_with_pdfplumber(file_bytes)
-        if text and text.strip():
+        if text and _is_clean_text(text):
             return text
     except Exception:
         pass
     return _ocr_with_claude_vision(file_bytes)
 
 
-def _deduplicate_chars(text: str) -> str:
-    """Fix doubled characters common in Clalit/Hebrew PDFs (e.g. 'ןןוו' → 'ןו')."""
-    if not text:
-        return text
-    result = [text[0]]
-    for ch in text[1:]:
-        if ch != result[-1]:
-            result.append(ch)
-    return "".join(result)
+def _is_clean_text(text: str) -> bool:
+    """Return False if text looks garbled (doubled chars = Clalit-style PDF)."""
+    if not text or len(text) < 20:
+        return False
+    # Count consecutive duplicate characters
+    dupes = sum(1 for i in range(1, len(text)) if text[i] == text[i - 1] and text[i] not in " \n\t")
+    ratio = dupes / len(text)
+    # If more than 20% of chars are duplicates, text is garbled → use OCR
+    return ratio < 0.2
 
 
 def _extract_with_pdfplumber(file_bytes: bytes) -> str:
     parts: list[str] = []
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
         for page in pdf.pages:
-            # Try extract_text first, then words as fallback
             page_text = page.extract_text(x_tolerance=3, y_tolerance=3)
             if not page_text:
                 words = page.extract_words()
                 page_text = " ".join(w["text"] for w in words) if words else ""
             if page_text:
                 parts.append(page_text)
-    raw = "\n".join(parts)
-    # Fix doubled characters (common in Clalit Hebrew PDFs)
-    deduped = _deduplicate_chars(raw)
-    return deduped
+    return "\n".join(parts)
 
 
 def _ocr_with_claude_vision(file_bytes: bytes) -> str:
@@ -63,7 +59,7 @@ def _ocr_with_claude_vision(file_bytes: bytes) -> str:
 
     content.append({
         "type": "text",
-        "text": "אלו עמודי PDF רפואי סרוק. חלץ את כל הטקסט הגלוי בדיוק כפי שהוא מופיע, ללא עיצוב נוסף.",
+        "text": "אלו עמודי PDF רפואי. חלץ את כל הטקסט הגלוי בדיוק כפי שהוא מופיע, ללא עיצוב נוסף.",
     })
 
     response = client.messages.create(
