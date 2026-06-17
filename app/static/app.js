@@ -566,3 +566,26 @@ decisionBtn.addEventListener("click", async () => {
         decisionBtn.disabled = false;
     }
 });
+
+// ─── Auth / Header ───
+(async () => {
+    try {
+        const res = await fetch("/auth/me", {credentials: "include"});
+        if (res.status === 401) { location.href = "/login"; return; }
+        if (res.ok) {
+            const user = await res.json();
+            const nameEl = document.getElementById("header-user-name");
+            const adminLink = document.getElementById("admin-link");
+            if (nameEl) nameEl.textContent = user.full_name || "";
+            if (adminLink && user.role === "admin") adminLink.style.display = "";
+        }
+    } catch(e) { /* ignore */ }
+})();
+
+const logoutBtn = document.getElementById("logout-btn");
+if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+        await fetch("/auth/logout", {method: "POST", credentials: "include"});
+        location.href = "/login";
+    });
+}

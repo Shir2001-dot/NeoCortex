@@ -40,9 +40,9 @@
     </div>
     <div style="display:flex;align-items:center;gap:.75rem">
         <span class="header-badge">Beta · קליני בלבד</span>
-        <form method="POST" action="/logout" style="margin:0">
-            <button type="submit" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:.3rem .7rem;font-size:.78rem;cursor:pointer">יציאה</button>
-        </form>
+        <span id="header-user-name" style="color:rgba(255,255,255,.85);font-size:.8rem;font-weight:600"></span>
+        <a id="admin-link" href="/admin" style="display:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:.3rem .7rem;font-size:.78rem;text-decoration:none">ניהול</a>
+        <button id="logout-btn" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:.3rem .7rem;font-size:.78rem;cursor:pointer">יציאה</button>
     </div>
 </header>
 

@@ -39,18 +39,16 @@
     </div>
     <h2>כניסה למערכת</h2>
 
-    <form method="POST" action="/login">
-        <div id="error-msg" class="error-msg" style="display:none">שם משתמש או סיסמה שגויים</div>
-        <div class="form-group">
-            <label for="username">שם משתמש</label>
-            <input type="text" id="username" name="username" placeholder="הכנס שם משתמש" autocomplete="username" />
-        </div>
-        <div class="form-group">
-            <label for="password">סיסמה</label>
-            <input type="password" id="password" name="password" placeholder="הכנס סיסמה" autocomplete="current-password" />
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%;margin-top:.5rem">כניסה →</button>
-    </form>
+    <div id="error-msg" class="error-msg" style="display:none">מספר תעודת זהות או סיסמה שגויים</div>
+    <div class="form-group">
+        <label for="id_number">מספר תעודת זהות</label>
+        <input type="text" id="id_number" placeholder="מספר תעודת זהות" autocomplete="username" inputmode="numeric" />
+    </div>
+    <div class="form-group">
+        <label for="password">סיסמה</label>
+        <input type="password" id="password" placeholder="הכנס סיסמה" autocomplete="current-password" />
+    </div>
+    <button type="button" class="btn btn-primary" style="width:100%;margin-top:.5rem" id="login-btn">כניסה →</button>
 
     <div class="login-footer">Beta · לשימוש קליני מורשה בלבד</div>
 </div>
@@ -59,7 +57,31 @@
 const params = new URLSearchParams(location.search);
 if (params.get("error")) document.getElementById("error-msg").style.display = "block";
 
-// Neural background (same as main app)
+async function doLogin() {
+    const id_number = document.getElementById("id_number").value.trim();
+    const password = document.getElementById("password").value;
+    document.getElementById("error-msg").style.display = "none";
+    try {
+        const res = await fetch("/auth/login", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({id_number, password}),
+            credentials: "include",
+        });
+        if (res.ok) {
+            location.href = "/";
+        } else {
+            document.getElementById("error-msg").style.display = "block";
+        }
+    } catch(e) {
+        document.getElementById("error-msg").style.display = "block";
+    }
+}
+
+document.getElementById("login-btn").addEventListener("click", doLogin);
+document.addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+
+// Neural background
 const canvas = document.getElementById("neural-bg");
 const ctx = canvas.getContext("2d");
 let W, H, nodes = [];

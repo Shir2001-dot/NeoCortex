@@ -122,3 +122,19 @@ class DrugInteraction(BaseModel):
 class InteractionsResult(BaseModel):
     patient_id: str
     interactions: list[DrugInteraction] = []
+
+
+class CreateUserRequest(BaseModel):
+    id_number: str
+    full_name: str
+    specialty: Optional[str] = None
+    role: str  # "doctor", "secretary", "admin"
+    password: str
+
+
+class UserInfo(BaseModel):
+    id_number: str
+    full_name: str
+    specialty: Optional[str]
+    role: str
+    clinic_id: str

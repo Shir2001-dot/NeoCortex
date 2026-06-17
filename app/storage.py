@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 
 from sqlalchemy import Column, DateTime, ForeignKey, String, Text, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -15,12 +16,33 @@ engine = create_engine(DATABASE_URL, connect_args=connect_args)
 SessionLocal = sessionmaker(bind=engine)
 
 
+class ClinicRow(Base):
+    __tablename__ = "clinics"
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class UserRow(Base):
+    __tablename__ = "users"
+    id_number = Column(String, primary_key=True)
+    full_name = Column(String, nullable=False)
+    specialty = Column(String, nullable=True)
+    role = Column(String, nullable=False)
+    clinic_id = Column(String, ForeignKey("clinics.id"), nullable=False)
+    hashed_password = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class PatientRecordRow(Base):
     __tablename__ = "patient_records"
 
     patient_id = Column(String, primary_key=True)
     data = Column(Text, nullable=False)
     created_at = Column(DateTime, nullable=False)
+    clinic_id = Column(String, nullable=True)
+    doctor_id_number = Column(String, nullable=True)
+    specialty = Column(String, nullable=True)
 
 
 class PatientMasterRow(Base):
@@ -41,18 +63,110 @@ class PatientTransactionRow(Base):
     transaction_type = Column(String, nullable=False, default="referral")
     raw_text = Column(Text, nullable=False, default="")
     extracted_json = Column(Text, nullable=False)
+    clinic_id = Column(String, nullable=True)
+    doctor_id_number = Column(String, nullable=True)
 
 
 Base.metadata.create_all(engine)
 
 
-def save_record(record: PatientRecord) -> None:
+def seed_demo_data(session) -> None:
+    """Create demo clinic and users if they don't already exist."""
+    from app.auth import hash_password
+
+    # Check if already seeded
+    if session.get(UserRow, "000000000"):
+        return
+
+    # Create demo clinic
+    clinic = session.get(ClinicRow, "clinic-demo")
+    if not clinic:
+        session.add(ClinicRow(id="clinic-demo", name="קליניקת הדגמה"))
+
+    # Admin
+    session.add(UserRow(
+        id_number="000000000",
+        full_name="מנהל מערכת",
+        specialty=None,
+        role="admin",
+        clinic_id="clinic-demo",
+        hashed_password=hash_password("admin123"),
+    ))
+
+    # Doctor
+    session.add(UserRow(
+        id_number="123456789",
+        full_name='ד"ר כהן',
+        specialty="פסיכיאטריה",
+        role="doctor",
+        clinic_id="clinic-demo",
+        hashed_password=hash_password("doctor123"),
+    ))
+
+    # Secretary
+    session.add(UserRow(
+        id_number="987654321",
+        full_name="שרה לוי",
+        specialty=None,
+        role="secretary",
+        clinic_id="clinic-demo",
+        hashed_password=hash_password("secretary123"),
+    ))
+
+    session.commit()
+
+
+def get_user_by_id(session, id_number: str) -> UserRow | None:
+    return session.get(UserRow, id_number)
+
+
+def get_users_by_clinic(session, clinic_id: str) -> list:
+    return session.query(UserRow).filter_by(clinic_id=clinic_id).all()
+
+
+def create_user(session, id_number: str, full_name: str, specialty: str | None,
+                role: str, clinic_id: str, hashed_password: str) -> UserRow:
+    user = UserRow(
+        id_number=id_number,
+        full_name=full_name,
+        specialty=specialty,
+        role=role,
+        clinic_id=clinic_id,
+        hashed_password=hashed_password,
+    )
+    session.add(user)
+    session.commit()
+    return user
+
+
+def delete_user(session, id_number: str) -> bool:
+    user = session.get(UserRow, id_number)
+    if user is None:
+        return False
+    session.delete(user)
+    session.commit()
+    return True
+
+
+def get_clinic(session, clinic_id: str) -> ClinicRow | None:
+    return session.get(ClinicRow, clinic_id)
+
+
+def get_patients_by_clinic(session, clinic_id: str) -> list:
+    return session.query(PatientRecordRow).filter_by(clinic_id=clinic_id).all()
+
+
+def save_record(record: PatientRecord, clinic_id: str | None = None,
+                doctor_id_number: str | None = None, specialty: str | None = None) -> None:
     with SessionLocal() as session:
         session.merge(
             PatientRecordRow(
                 patient_id=record.patient_id,
                 data=record.model_dump_json(),
                 created_at=record.created_at,
+                clinic_id=clinic_id,
+                doctor_id_number=doctor_id_number,
+                specialty=specialty,
             )
         )
         session.commit()
@@ -90,7 +204,8 @@ def upsert_master(patient_id: str, full_name: str | None, dob: str | None, gende
         session.commit()
 
 
-def save_transaction(tx: PatientTransaction) -> None:
+def save_transaction(tx: PatientTransaction, clinic_id: str | None = None,
+                     doctor_id_number: str | None = None) -> None:
     with SessionLocal() as session:
         row = PatientTransactionRow(
             transaction_id=tx.transaction_id,
@@ -99,6 +214,8 @@ def save_transaction(tx: PatientTransaction) -> None:
             transaction_type=tx.transaction_type.value,
             raw_text=tx.raw_text,
             extracted_json=tx.extracted.model_dump_json(),
+            clinic_id=clinic_id,
+            doctor_id_number=doctor_id_number,
         )
         session.merge(row)
         session.commit()

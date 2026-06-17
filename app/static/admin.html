@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NeoCortex AI – ניהול משתמשים</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <style>
+        .admin-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+        .admin-header h1 { font-size: 1.3rem; font-weight: 700; color: var(--text); }
+        .admin-header .clinic-name { font-size: .9rem; color: var(--primary); font-weight: 600; }
+        table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+        th { background: var(--bg); font-weight: 700; color: var(--text-secondary); padding: .55rem .75rem; text-align: right; border-bottom: 2px solid var(--border); }
+        td { padding: .55rem .75rem; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(26,86,219,.04); }
+        .role-badge {
+            display: inline-block;
+            padding: .15rem .55rem;
+            border-radius: 20px;
+            font-size: .75rem;
+            font-weight: 700;
+        }
+        .role-admin { background: #fef3c7; color: #92400e; }
+        .role-doctor { background: #d1fae5; color: #065f46; }
+        .role-secretary { background: #dbeafe; color: #1e40af; }
+        .form-row { display: flex; gap: .65rem; flex-wrap: wrap; align-items: flex-end; margin-top: 1.25rem; }
+        .form-row .form-group { flex: 1; min-width: 140px; margin-bottom: 0; }
+        .form-row .form-group label { font-size: .78rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: .25rem; }
+        .form-row input, .form-row select { width: 100%; }
+        .section-title { font-size: .95rem; font-weight: 700; color: var(--text); margin-bottom: .75rem; padding-bottom: .4rem; border-bottom: 2px solid var(--border); }
+        .success-msg { background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46; border-radius: 8px; padding: .55rem .85rem; font-size: .85rem; margin-top: .75rem; }
+        .error-toast { background: #fef2f2; border: 1px solid #fca5a5; color: #c81e1e; border-radius: 8px; padding: .55rem .85rem; font-size: .85rem; margin-top: .75rem; }
+    </style>
+</head>
+<body>
+<canvas id="neural-bg"></canvas>
+
+<header>
+    <div class="logo">
+        <div class="logo-text">
+            <div class="logo-wordmark">
+                <bdi dir="ltr"><span class="logo-neo">NEO</span><span class="logo-cortex">CORTEX</span></bdi>
+            </div>
+            <div class="logo-sub">ניהול משתמשים</div>
+        </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:.75rem">
+        <a href="/" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:.3rem .7rem;font-size:.78rem;text-decoration:none">חזרה לאפליקציה הראשית</a>
+        <button id="logout-btn" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:.3rem .7rem;font-size:.78rem;cursor:pointer">יציאה</button>
+    </div>
+</header>
+
+<main>
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon">🏥</div>
+            <div>
+                <h2 id="clinic-title">ניהול קליניקה</h2>
+                <div class="clinic-name" id="clinic-name-sub"></div>
+            </div>
+        </div>
+        <div class="card-body">
+
+            <!-- Users table -->
+            <div class="section-title">רשימת משתמשים</div>
+            <div style="overflow-x:auto">
+                <table id="users-table">
+                    <thead>
+                        <tr>
+                            <th>ת.ז</th>
+                            <th>שם מלא</th>
+                            <th>תחום</th>
+                            <th>תפקיד</th>
+                            <th>מחיקה</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody">
+                        <tr><td colspan="5" style="text-align:center;color:var(--muted)">טוען...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="table-msg" style="display:none"></div>
+
+            <!-- Add user form -->
+            <div class="section-title" style="margin-top:1.75rem">הוספת משתמש חדש</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="new-id">מספר תעודת זהות</label>
+                    <input type="text" id="new-id" placeholder="9 ספרות" inputmode="numeric" maxlength="9" />
+                </div>
+                <div class="form-group">
+                    <label for="new-name">שם מלא</label>
+                    <input type="text" id="new-name" placeholder='ד"ר ישראל ישראלי' />
+                </div>
+                <div class="form-group">
+                    <label for="new-specialty">תחום</label>
+                    <input type="text" id="new-specialty" placeholder="פסיכיאטריה, אורתופדיה..." />
+                </div>
+                <div class="form-group">
+                    <label for="new-role">תפקיד</label>
+                    <select id="new-role">
+                        <option value="doctor">רופא</option>
+                        <option value="secretary">מזכירה</option>
+                        <option value="admin">מנהל</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="new-password">סיסמה</label>
+                    <input type="password" id="new-password" placeholder="לפחות 6 תווים" />
+                </div>
+                <div class="form-group" style="flex:0;min-width:unset">
+                    <label>&nbsp;</label>
+                    <button class="btn btn-primary" id="add-user-btn">הוסף</button>
+                </div>
+            </div>
+            <div id="add-msg" style="display:none"></div>
+
+        </div>
+    </div>
+</main>
+
+<script>
+async function apiFetch(url, opts = {}) {
+    const res = await fetch(url, {credentials: "include", ...opts});
+    if (res.status === 401) { location.href = "/login"; return null; }
+    return res;
+}
+
+function roleLabel(role) {
+    const map = {admin: "מנהל", doctor: "רופא", secretary: "מזכירה"};
+    const cls = {admin: "role-admin", doctor: "role-doctor", secretary: "role-secretary"};
+    return `<span class="role-badge ${cls[role] || ''}">${map[role] || role}</span>`;
+}
+
+async function loadClinic() {
+    const res = await apiFetch("/admin/clinic");
+    if (!res) return;
+    if (res.ok) {
+        const data = await res.json();
+        document.getElementById("clinic-title").textContent = "ניהול – " + data.name;
+        document.getElementById("clinic-name-sub").textContent = data.name;
+    }
+}
+
+let currentUserIdNumber = null;
+
+async function loadMe() {
+    const res = await apiFetch("/auth/me");
+    if (!res) return;
+    if (res.ok) {
+        const data = await res.json();
+        currentUserIdNumber = data.id_number;
+    }
+}
+
+async function loadUsers() {
+    const res = await apiFetch("/admin/users");
+    if (!res) return;
+    const tbody = document.getElementById("users-tbody");
+    if (!res.ok) {
+        tbody.innerHTML = '<tr><td colspan="5" style="color:#c81e1e;text-align:center">שגיאה בטעינת משתמשים</td></tr>';
+        return;
+    }
+    const users = await res.json();
+    if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted)">אין משתמשים</td></tr>';
+        return;
+    }
+    tbody.innerHTML = users.map(u => `
+        <tr>
+            <td><bdi dir="ltr">${u.id_number}</bdi></td>
+            <td>${u.full_name}</td>
+            <td>${u.specialty || '—'}</td>
+            <td>${roleLabel(u.role)}</td>
+            <td>
+                ${u.id_number !== currentUserIdNumber
+                    ? `<button class="btn btn-outline" style="font-size:.75rem;padding:.25rem .6rem;color:#c81e1e;border-color:#fca5a5" onclick="deleteUser('${u.id_number}', '${u.full_name}')">מחק</button>`
+                    : '<span style="font-size:.75rem;color:var(--muted)">אתה</span>'
+                }
+            </td>
+        </tr>
+    `).join("");
+}
+
+async function deleteUser(idNumber, name) {
+    if (!confirm(`האם למחוק את ${name}?`)) return;
+    const res = await apiFetch(`/admin/users/${idNumber}`, {method: "DELETE"});
+    if (!res) return;
+    const msgEl = document.getElementById("table-msg");
+    if (res.ok) {
+        msgEl.className = "success-msg";
+        msgEl.textContent = `המשתמש ${name} נמחק בהצלחה`;
+        msgEl.style.display = "block";
+        loadUsers();
+    } else {
+        const err = await res.json();
+        msgEl.className = "error-toast";
+        msgEl.textContent = err.detail || "שגיאה במחיקת משתמש";
+        msgEl.style.display = "block";
+    }
+    setTimeout(() => { msgEl.style.display = "none"; }, 4000);
+}
+
+async function addUser() {
+    const id_number = document.getElementById("new-id").value.trim();
+    const full_name = document.getElementById("new-name").value.trim();
+    const specialty = document.getElementById("new-specialty").value.trim() || null;
+    const role = document.getElementById("new-role").value;
+    const password = document.getElementById("new-password").value;
+    const msgEl = document.getElementById("add-msg");
+
+    if (!id_number || !full_name || !password) {
+        msgEl.className = "error-toast";
+        msgEl.textContent = "יש למלא ת.ז, שם מלא וסיסמה";
+        msgEl.style.display = "block";
+        return;
+    }
+    if (password.length < 6) {
+        msgEl.className = "error-toast";
+        msgEl.textContent = "הסיסמה חייבת להכיל לפחות 6 תווים";
+        msgEl.style.display = "block";
+        return;
+    }
+
+    const res = await apiFetch("/admin/users", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({id_number, full_name, specialty, role, password}),
+    });
+    if (!res) return;
+
+    if (res.ok) {
+        msgEl.className = "success-msg";
+        msgEl.textContent = `המשתמש ${full_name} נוצר בהצלחה`;
+        msgEl.style.display = "block";
+        document.getElementById("new-id").value = "";
+        document.getElementById("new-name").value = "";
+        document.getElementById("new-specialty").value = "";
+        document.getElementById("new-password").value = "";
+        loadUsers();
+    } else {
+        const err = await res.json();
+        msgEl.className = "error-toast";
+        msgEl.textContent = err.detail || "שגיאה ביצירת משתמש";
+        msgEl.style.display = "block";
+    }
+    setTimeout(() => { msgEl.style.display = "none"; }, 5000);
+}
+
+document.getElementById("add-user-btn").addEventListener("click", addUser);
+document.getElementById("logout-btn").addEventListener("click", async () => {
+    await apiFetch("/auth/logout", {method: "POST"});
+    location.href = "/login";
+});
+
+// Init
+(async () => {
+    await loadMe();
+    await Promise.all([loadClinic(), loadUsers()]);
+})();
+
+// Neural background
+const canvas = document.getElementById("neural-bg");
+const ctx = canvas.getContext("2d");
+let W, H, nodes = [];
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+resize();
+window.addEventListener("resize", resize);
+for (let i = 0; i < 40; i++) nodes.push({ x: Math.random()*W, y: Math.random()*H, vx:(Math.random()-.5)*.3, vy:(Math.random()-.5)*.3, r:Math.random()*2+1, pulse:Math.random()*Math.PI*2 });
+function draw() {
+    ctx.clearRect(0,0,W,H);
+    for (let i=0;i<nodes.length;i++) for (let j=i+1;j<nodes.length;j++) {
+        const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y, d=Math.sqrt(dx*dx+dy*dy);
+        if(d<150){ ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.strokeStyle=`rgba(26,86,219,${(1-d/150)*.12})`; ctx.lineWidth=.7; ctx.stroke(); }
+    }
+    nodes.forEach(n => {
+        n.pulse+=.02; const g=(Math.sin(n.pulse)+1)*.5;
+        ctx.beginPath(); ctx.arc(n.x,n.y,n.r+g*.4,0,Math.PI*2);
+        ctx.fillStyle=`rgba(26,86,219,${.2+g*.2})`; ctx.fill();
+        n.x+=n.vx; n.y+=n.vy;
+        if(n.x<0||n.x>W) n.vx*=-1; if(n.y<0||n.y>H) n.vy*=-1;
+    });
+    requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>
