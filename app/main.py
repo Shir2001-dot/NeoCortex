@@ -424,7 +424,6 @@ async def export_pdf(patient_id: str, user: dict = Depends(require_permission("v
 
     story += section("רקע רפואי", [
         ("היסטוריה רפואית", "\n".join(record.medical_history) if record.medical_history else None),
-        ("הערות", record.notes),
     ])
 
     doc.build(story)
