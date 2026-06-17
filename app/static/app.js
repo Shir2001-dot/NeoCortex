@@ -6,9 +6,6 @@ const recordCard  = document.getElementById("record-card");
 const decisionCard = document.getElementById("decision-card");
 const recordContent = document.getElementById("record-content");
 const decisionContent = document.getElementById("decision-content");
-const searchBtn   = document.getElementById("search-btn");
-const searchInput = document.getElementById("search-input");
-const searchResults = document.getElementById("search-results");
 const timelineSection = document.getElementById("timeline-section");
 const timelineContent = document.getElementById("timeline-content");
 
@@ -170,69 +167,6 @@ function renderDecision(result) {
     `;
 }
 
-// ─── Patient Search ───
-searchBtn.addEventListener("click", async () => {
-    const query = searchInput.value.trim().toLowerCase();
-    try {
-        const res = await fetch("/patients");
-        if (!res.ok) throw new Error("שגיאת שרת");
-        const patients = await res.json();
-        const filtered = query
-            ? patients.filter(p =>
-                (p.patient_id || "").toLowerCase().includes(query) ||
-                (p.full_name || "").toLowerCase().includes(query))
-            : patients;
-
-        if (filtered.length === 0) {
-            searchResults.innerHTML = `<div class="search-empty">לא נמצאו מטופלים</div>`;
-        } else {
-            searchResults.innerHTML = filtered.map(p => `
-                <div class="search-item" data-patient-id="${esc(p.patient_id)}">
-                    <div class="search-item-name">${esc(p.full_name || p.patient_id)}</div>
-                    <div class="search-item-id">${esc(p.patient_id)}</div>
-                </div>
-            `).join("");
-            searchResults.querySelectorAll(".search-item").forEach(el => {
-                el.addEventListener("click", () => selectPatient(el.dataset.patientId));
-            });
-        }
-        searchResults.classList.remove("hidden");
-    } catch (e) {
-        searchResults.innerHTML = `<div class="search-empty">${esc(e.message)}</div>`;
-        searchResults.classList.remove("hidden");
-    }
-});
-
-searchInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") searchBtn.click();
-});
-
-async function selectPatient(patientId) {
-    document.getElementById("patient-id").value = patientId;
-    searchResults.classList.add("hidden");
-    currentPatientId = patientId;
-
-    // Load latest record and show record card
-    try {
-        const [recRes, txRes] = await Promise.all([
-            fetch(`/patients/${encodeURIComponent(patientId)}`),
-            fetch(`/patients/${encodeURIComponent(patientId)}/transactions`),
-        ]);
-        if (recRes.ok) {
-            const record = await recRes.json();
-            renderRecord(record);
-            recordCard.classList.remove("hidden");
-            setStep(2);
-        }
-        if (txRes.ok) {
-            const transactions = await txRes.json();
-            // no specific current tx when just browsing
-            renderTimeline(transactions, null);
-        }
-    } catch(e) {
-        console.error(e);
-    }
-}
 
 // ─── Ingest ───
 ingestBtn.addEventListener("click", async () => {
