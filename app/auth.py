@@ -38,8 +38,8 @@ def get_current_user(neocortex_token: Optional[str] = Cookie(default=None)) -> d
 
 
 def require_doctor(user: dict = Depends(get_current_user)) -> dict:
-    if user.get("role") not in ("doctor", "admin"):
-        raise HTTPException(status_code=403, detail="גישה מותרת לרופאים בלבד")
+    if user.get("role") not in ("doctor", "admin", "nurse", "intern"):
+        raise HTTPException(status_code=403, detail="גישה מותרת לצוות רפואי בלבד")
     return user
 
 
@@ -47,3 +47,14 @@ def require_admin(user: dict = Depends(get_current_user)) -> dict:
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="גישה מותרת למנהלים בלבד")
     return user
+
+
+def require_permission(perm: str):
+    """Server-side permission check — admin always passes, others need explicit permission."""
+    def dep(user: dict = Depends(get_current_user)) -> dict:
+        if user.get("role") == "admin":
+            return user
+        if perm not in user.get("permissions", []):
+            raise HTTPException(status_code=403, detail=f"אין הרשאה לפעולה זו")
+        return user
+    return dep

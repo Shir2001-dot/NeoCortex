@@ -12,6 +12,7 @@ from app.auth import (
     hash_password,
     require_admin,
     require_doctor,
+    require_permission,
     verify_password,
 )
 
@@ -256,7 +257,7 @@ def _user_tags(user: dict) -> dict:
 # ── Ingest routes ─────────────────────────────────────────────────────────────
 
 @app.post("/ingest/pdf", response_model=PatientTransaction)
-async def ingest_pdf(patient_id: str, file: UploadFile, user: dict = Depends(require_doctor)) -> PatientTransaction:
+async def ingest_pdf(patient_id: str, file: UploadFile, user: dict = Depends(require_permission("edit_records"))) -> PatientTransaction:
     file_bytes = await file.read()
     raw_text = extract_text_from_pdf(file_bytes)
     record = extract_patient_data(patient_id, raw_text, source="pdf")
@@ -269,7 +270,7 @@ async def ingest_pdf(patient_id: str, file: UploadFile, user: dict = Depends(req
 
 
 @app.post("/ingest/pdf-base64", response_model=PatientTransaction)
-async def ingest_pdf_base64(request: IngestPdfRequest, user: dict = Depends(require_doctor)) -> PatientTransaction:
+async def ingest_pdf_base64(request: IngestPdfRequest, user: dict = Depends(require_permission("edit_records"))) -> PatientTransaction:
     import base64
     file_bytes = base64.b64decode(request.pdf_base64)
     raw_text = extract_text_from_pdf(file_bytes)
@@ -283,7 +284,7 @@ async def ingest_pdf_base64(request: IngestPdfRequest, user: dict = Depends(requ
 
 
 @app.post("/ingest/text", response_model=PatientTransaction)
-async def ingest_text(request: IngestTextRequest, user: dict = Depends(require_doctor)) -> PatientTransaction:
+async def ingest_text(request: IngestTextRequest, user: dict = Depends(require_permission("edit_records"))) -> PatientTransaction:
     record = extract_patient_data(request.patient_id, request.text, source="text")
     tags = _user_tags(user)
     save_record(record, **tags)
@@ -324,7 +325,7 @@ async def get_patients(user: dict = Depends(get_current_user)) -> list[dict]:
 
 
 @app.get("/patients/{patient_id}", response_model=PatientRecord)
-async def get_patient(patient_id: str, user: dict = Depends(require_doctor)) -> PatientRecord:
+async def get_patient(patient_id: str, user: dict = Depends(require_permission("view_records"))) -> PatientRecord:
     record = get_record(patient_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -332,12 +333,12 @@ async def get_patient(patient_id: str, user: dict = Depends(require_doctor)) -> 
 
 
 @app.get("/patients/{patient_id}/transactions", response_model=list[PatientTransaction])
-async def get_patient_transactions(patient_id: str, user: dict = Depends(require_doctor)) -> list[PatientTransaction]:
+async def get_patient_transactions(patient_id: str, user: dict = Depends(require_permission("view_records"))) -> list[PatientTransaction]:
     return get_transactions(patient_id)
 
 
 @app.patch("/patients/{patient_id}/vitals", response_model=PatientRecord)
-async def update_vitals(patient_id: str, vitals: VitalsUpdateRequest, user: dict = Depends(require_doctor)) -> PatientRecord:
+async def update_vitals(patient_id: str, vitals: VitalsUpdateRequest, user: dict = Depends(require_permission("edit_records"))) -> PatientRecord:
     record = get_record(patient_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -349,7 +350,7 @@ async def update_vitals(patient_id: str, vitals: VitalsUpdateRequest, user: dict
 
 
 @app.post("/patients/{patient_id}/session-summary", response_model=SessionSummaryResult)
-async def session_summary(patient_id: str, request: SessionSummaryRequest) -> SessionSummaryResult:
+async def session_summary(patient_id: str, request: SessionSummaryRequest, user: dict = Depends(require_permission("session_summary"))) -> SessionSummaryResult:
     record = get_record(patient_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -369,7 +370,7 @@ async def session_summary(patient_id: str, request: SessionSummaryRequest) -> Se
 
 
 @app.post("/patients/{patient_id}/save-summary", response_model=PatientTransaction)
-async def save_summary(patient_id: str, request: SaveSummaryRequest) -> PatientTransaction:
+async def save_summary(patient_id: str, request: SaveSummaryRequest, user: dict = Depends(require_permission("session_summary"))) -> PatientTransaction:
     record = get_record(patient_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -392,7 +393,7 @@ async def save_summary(patient_id: str, request: SaveSummaryRequest) -> PatientT
 
 
 @app.post("/decision/{patient_id}", response_model=DecisionResult)
-async def run_decision(patient_id: str) -> DecisionResult:
+async def run_decision(patient_id: str, user: dict = Depends(require_permission("clinical_analysis"))) -> DecisionResult:
     record = get_record(patient_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -404,7 +405,7 @@ async def run_decision(patient_id: str) -> DecisionResult:
 @app.post("/patients/{patient_id}/interactions", response_model=InteractionsResult)
 async def run_interactions(
     patient_id: str,
-    _user: dict = Depends(require_doctor),
+    _user: dict = Depends(require_permission("drug_interactions")),
 ) -> InteractionsResult:
     record = get_record(patient_id)
     if record is None:
