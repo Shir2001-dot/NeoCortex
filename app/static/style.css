@@ -60,6 +60,7 @@ header {
     align-items: baseline;
     gap: 0;
     line-height: 1;
+    direction: ltr;
 }
 
 .logo-neo {
