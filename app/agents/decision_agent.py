@@ -5,7 +5,7 @@ from anthropic import Anthropic
 from app.agents.json_utils import parse_json_response
 from app.models import DecisionResult, PatientRecord
 
-MODEL = "claude-sonnet-4-6"
+MODEL = "claude-opus-4-8"
 
 SYSTEM_PROMPT = """\
 You are a clinical decision-support assistant. Given a structured patient record, \

@@ -2,7 +2,7 @@ import os
 
 from anthropic import Anthropic
 
-MODEL = "claude-sonnet-4-6"
+MODEL = "claude-haiku-4-5-20251001"
 
 SYSTEM_PROMPT = """\
 אתה עוזר רפואי המתמחה בכתיבת סיכומי פגישות קליניות מקצועיים.

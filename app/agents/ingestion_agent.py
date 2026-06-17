@@ -5,7 +5,7 @@ from anthropic import Anthropic
 from app.agents.json_utils import parse_json_response
 from app.models import PatientRecord
 
-MODEL = "claude-sonnet-4-6"
+MODEL = "claude-haiku-4-5-20251001"
 
 SYSTEM_PROMPT = """\
 You are a clinical data extraction assistant. Given raw medical text (a referral \

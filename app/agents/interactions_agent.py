@@ -5,7 +5,7 @@ from anthropic import Anthropic
 from app.agents.json_utils import parse_json_response
 from app.models import DrugInteraction, InteractionsResult
 
-MODEL = "claude-sonnet-4-6"
+MODEL = "claude-sonnet-4-6"  # Sonnet for medical accuracy
 
 SYSTEM_PROMPT = """\
 אתה עוזר רפואי מומחה לבדיקת אינטראקציות בין תרופות. \
