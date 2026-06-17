@@ -55,7 +55,7 @@ def check_interactions(patient_id: str, medications: list[str]) -> InteractionsR
 
     response = client.messages.create(
         model=MODEL,
-        max_tokens=2048,
+        max_tokens=4096,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_content}],
     )
