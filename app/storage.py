@@ -206,7 +206,11 @@ def get_clinic(session, clinic_id: str) -> ClinicRow | None:
 
 
 def get_patients_by_clinic(session, clinic_id: str) -> list:
-    return session.query(PatientRecordRow).filter_by(clinic_id=clinic_id).all()
+    from sqlalchemy import or_
+    return (session.query(PatientRecordRow)
+            .filter(or_(PatientRecordRow.clinic_id == clinic_id,
+                        PatientRecordRow.clinic_id == None))
+            .all())
 
 
 def save_record(record: PatientRecord, clinic_id: str | None = None,
