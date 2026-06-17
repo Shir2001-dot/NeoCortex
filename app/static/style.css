@@ -632,12 +632,33 @@ input[type="file"]:hover { border-color: var(--primary); }
 }
 
 .medical-doc-body {
-    font-size: 0.9rem;
-    line-height: 1.8;
+    font-size: 0.92rem;
+    line-height: 1.9;
     color: #111928;
-    min-height: 80px;
+    min-height: 120px;
     white-space: pre-wrap;
     margin: 0.75rem 0;
+    outline: none;
+    border: 1px dashed transparent;
+    border-radius: 4px;
+    padding: 0.25rem;
+    transition: border-color .2s;
+}
+
+.medical-doc-body:focus {
+    border-color: #93c5fd;
+    background: #f8faff;
+}
+
+.medical-doc-body:hover {
+    border-color: #d1d5db;
+}
+
+.edit-hint {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+    text-align: left;
 }
 
 .medical-doc-footer {
@@ -668,8 +689,9 @@ input[type="file"]:hover { border-color: var(--primary); }
     border-radius: 12px;
     box-shadow: 0 16px 48px rgba(0,0,0,.18);
     width: 100%;
-    max-width: 560px;
-    overflow: hidden;
+    max-width: 780px;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .modal-header {

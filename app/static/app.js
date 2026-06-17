@@ -382,6 +382,9 @@ document.getElementById("summary-generate-btn").addEventListener("click", async 
         document.getElementById("summary-result").classList.remove("hidden");
         document.getElementById("save-summary-msg").textContent = "";
         setStatus("summary", "", "");
+        setTimeout(() => {
+            document.getElementById("summary-result").scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 100);
     } catch (e) {
         setStatus("summary", e.message, "error");
     } finally {
@@ -390,7 +393,7 @@ document.getElementById("summary-generate-btn").addEventListener("click", async 
 });
 
 document.getElementById("summary-copy-btn").addEventListener("click", () => {
-    const text = document.getElementById("summary-text").textContent;
+    const text = document.getElementById("summary-text").innerText;
     navigator.clipboard.writeText(text).then(() => {
         document.getElementById("summary-copy-btn").textContent = "✓ הועתק";
         setTimeout(() => { document.getElementById("summary-copy-btn").textContent = "📋 העתק"; }, 2000);
@@ -398,7 +401,7 @@ document.getElementById("summary-copy-btn").addEventListener("click", () => {
 });
 
 document.getElementById("summary-save-btn").addEventListener("click", async () => {
-    const summary = document.getElementById("summary-text").textContent;
+    const summary = document.getElementById("summary-text").innerText;
     const doctorName = document.getElementById("doctor-name").value.trim();
     if (!summary) return;
 
