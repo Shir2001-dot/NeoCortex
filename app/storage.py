@@ -99,6 +99,18 @@ def _run_migrations() -> None:
                 conn.execute(text(sql))
             except Exception:
                 pass
+
+        # Backfill permissions for existing users that have NULL
+        for role, perms in ROLE_DEFAULT_PERMISSIONS.items():
+            if role == "admin":
+                continue
+            try:
+                conn.execute(text(
+                    "UPDATE users SET permissions = :p WHERE role = :r AND permissions IS NULL"
+                ), {"p": json.dumps(perms), "r": role})
+            except Exception:
+                pass
+
         conn.commit()
 
 

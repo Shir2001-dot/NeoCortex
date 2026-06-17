@@ -49,12 +49,25 @@ def require_admin(user: dict = Depends(get_current_user)) -> dict:
     return user
 
 
+ROLE_DEFAULT_PERMISSIONS = {
+    "doctor": ["view_records", "edit_records", "prescribe", "clinical_analysis", "session_summary", "drug_interactions"],
+    "intern": ["view_records", "clinical_analysis", "session_summary"],
+    "nurse":  ["view_records", "edit_records", "drug_interactions"],
+    "secretary": ["view_records"],
+}
+
+
 def require_permission(perm: str):
-    """Server-side permission check — admin always passes, others need explicit permission."""
+    """Server-side permission check — admin always passes, others check JWT permissions.
+    Falls back to role defaults for tokens issued before permissions were added."""
     def dep(user: dict = Depends(get_current_user)) -> dict:
         if user.get("role") == "admin":
             return user
-        if perm not in user.get("permissions", []):
-            raise HTTPException(status_code=403, detail=f"אין הרשאה לפעולה זו")
+        perms = user.get("permissions")
+        if not perms:
+            # Old token without permissions — fall back to role defaults
+            perms = ROLE_DEFAULT_PERMISSIONS.get(user.get("role", ""), [])
+        if perm not in perms:
+            raise HTTPException(status_code=403, detail="אין הרשאה לפעולה זו")
         return user
     return dep
