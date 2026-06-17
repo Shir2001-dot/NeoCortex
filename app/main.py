@@ -84,9 +84,13 @@ async def ingest_text(request: IngestTextRequest) -> PatientTransaction:
     return tx
 
 
-@app.get("/patients", response_model=list[PatientMaster])
-async def get_patients() -> list[PatientMaster]:
-    return list_patients()
+@app.get("/patients")
+async def get_patients() -> list[dict]:
+    return [
+        {"patient_id": p.patient_id, "full_name": p.full_name,
+         "date_of_birth": p.date_of_birth, "gender": p.gender}
+        for p in list_patients()
+    ]
 
 
 @app.get("/patients/{patient_id}", response_model=PatientRecord)
