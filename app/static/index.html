@@ -279,8 +279,8 @@ function draw() {
             const dx = nodes[i].x - nodes[j].x;
             const dy = nodes[i].y - nodes[j].y;
             const dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist < 180) {
-                const alpha = (1 - dist/180) * 0.32;
+            if (dist < 165) {
+                const alpha = (1 - dist/165) * 0.22;
                 ctx.beginPath();
                 ctx.moveTo(nodes[i].x, nodes[i].y);
                 ctx.lineTo(nodes[j].x, nodes[j].y);
@@ -296,10 +296,10 @@ function draw() {
         n.pulse += 0.02;
         const glow = (Math.sin(n.pulse) + 1) * 0.5;
         ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r + glow * 0.8, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(26, 86, 219, ${0.4 + glow * 0.35})`;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = "rgba(26,86,219,0.5)";
+        ctx.arc(n.x, n.y, n.r + glow * 0.6, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(26, 86, 219, ${0.3 + glow * 0.28})`;
+        ctx.shadowBlur = 7;
+        ctx.shadowColor = "rgba(26,86,219,0.35)";
         ctx.fill();
         ctx.shadowBlur = 0;
 
