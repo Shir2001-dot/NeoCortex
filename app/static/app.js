@@ -362,19 +362,7 @@ document.getElementById("mic-btn").addEventListener("click", () => {
 });
 
 // ─── Session Summary Panel ───
-summaryBtn.addEventListener("click", () => {
-    if (!currentPatientId) return;
-    document.getElementById("summary-notes").value = "";
-    document.getElementById("summary-result").classList.add("hidden");
-    setStatus("summary", "", "");
-    document.getElementById("summary-panel").classList.remove("hidden");
-    summaryBtn.style.display = "none";
-});
-
-document.getElementById("summary-close").addEventListener("click", () => {
-    document.getElementById("summary-panel").classList.add("hidden");
-    summaryBtn.style.display = "";
-});
+// Summary is now opened via the sidebar nav (showView("summary"))
 
 document.getElementById("summary-generate-btn").addEventListener("click", async () => {
     const notes = document.getElementById("summary-notes").value.trim();
