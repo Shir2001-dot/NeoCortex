@@ -212,6 +212,8 @@ ingestBtn.addEventListener("click", async () => {
 
         const tx = await res.json();
         currentPatientId = tx.patient_id;
+        const titleEl = document.getElementById("record-card-title");
+        if (titleEl) titleEl.textContent = `נתוני מטופל · ת.ז ${tx.patient_id}`;
         renderRecord(tx.extracted);
         recordCard.classList.remove("hidden");
         setStep(2);
