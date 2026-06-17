@@ -29,13 +29,16 @@ function showView(viewName) {
     if (view) view.classList.remove("hidden");
     const btn = document.getElementById("nav-" + viewName);
     if (btn) btn.classList.add("active");
+    sessionStorage.setItem("nc_view", viewName);
 }
 
 document.querySelectorAll(".sidebar-item[data-view]").forEach(btn => {
     btn.addEventListener("click", () => showView(btn.dataset.view));
 });
 
-function unlockClinicalNav() {
+function unlockClinicalNav(patientId) {
+    if (patientId) sessionStorage.setItem("nc_patient", patientId);
+
     document.querySelectorAll(".sidebar-clinical").forEach(el => el.classList.remove("hidden"));
     document.getElementById("sidebar-patient").classList.remove("hidden");
 }
@@ -213,7 +216,7 @@ ingestBtn.addEventListener("click", async () => {
         const titleEl = document.getElementById("record-card-title");
         if (titleEl) titleEl.textContent = `תיק מטופל · ת.ז ${tx.patient_id}`;
         renderRecord(tx.extracted);
-        unlockClinicalNav();
+        unlockClinicalNav(tx.patient_id);
         updateSidebarPatient(tx.extracted.full_name, tx.patient_id);
         showView("record");
         setStatus("ingest","הופק בהצלחה ✓","success");
@@ -443,7 +446,7 @@ searchBtn.addEventListener("click", async () => {
                     const titleEl = document.getElementById("record-card-title");
                     if (titleEl) titleEl.textContent = `תיק מטופל · ת.ז ${pid}`;
                     renderRecord(record);
-                    unlockClinicalNav();
+                    unlockClinicalNav(pid);
                     updateSidebarPatient(record.full_name, pid);
                     showView("record");
                     resultsEl.innerHTML = "";
@@ -562,6 +565,26 @@ let currentUser = null;
 
         // Doctor/nurse/intern → apply permission-based UI
         applyPermissions(currentUser.permissions || []);
+
+        // Restore last open patient after page refresh
+        const savedPatient = sessionStorage.getItem("nc_patient");
+        const savedView   = sessionStorage.getItem("nc_view");
+        if (savedPatient) {
+            try {
+                const r = await fetch(`/patients/${encodeURIComponent(savedPatient)}`);
+                if (r.ok) {
+                    const record = await r.json();
+                    currentPatientId = savedPatient;
+                    currentRecord = record;
+                    const titleEl = document.getElementById("record-card-title");
+                    if (titleEl) titleEl.textContent = `תיק מטופל · ת.ז ${savedPatient}`;
+                    renderRecord(record);
+                    unlockClinicalNav(savedPatient);
+                    updateSidebarPatient(record.full_name, savedPatient);
+                    showView(savedView || "record");
+                }
+            } catch(e) { /* non-critical */ }
+        }
 
     } catch(e) { /* ignore */ }
 })();
