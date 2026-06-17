@@ -344,21 +344,19 @@ document.getElementById("mic-btn").addEventListener("click", () => {
     setMicState(true);
 });
 
-// ─── Session Summary ───
+// ─── Session Summary Panel ───
 summaryBtn.addEventListener("click", () => {
     if (!currentPatientId) return;
     document.getElementById("summary-notes").value = "";
     document.getElementById("summary-result").classList.add("hidden");
     setStatus("summary", "", "");
-    summaryModal.classList.remove("hidden");
+    document.getElementById("summary-panel").classList.remove("hidden");
+    summaryBtn.style.display = "none";
 });
 
 document.getElementById("summary-close").addEventListener("click", () => {
-    summaryModal.classList.add("hidden");
-});
-
-summaryModal.addEventListener("click", (e) => {
-    if (e.target === summaryModal) summaryModal.classList.add("hidden");
+    document.getElementById("summary-panel").classList.add("hidden");
+    summaryBtn.style.display = "";
 });
 
 document.getElementById("summary-generate-btn").addEventListener("click", async () => {
