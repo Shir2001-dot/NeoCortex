@@ -28,7 +28,7 @@ from app.storage import (
     upsert_master,
 )
 
-app = FastAPI(title="NeoCortex AI")
+app = FastAPI(title="NeoCortex AI", redirect_slashes=False)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 

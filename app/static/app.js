@@ -187,7 +187,7 @@ ingestBtn.addEventListener("click", async () => {
             let binary = "";
             for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
             const base64 = btoa(binary);
-            res = await fetch("/ingest/pdf-base64", {
+            res = await fetch(location.origin + "/ingest/pdf-base64", {
                 method: "POST",
                 headers: {"Content-Type":"application/json"},
                 body: JSON.stringify({patient_id: patientId, pdf_base64: base64}),
