@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, String, Text, create_engine
+from sqlalchemy import Column, DateTime, ForeignKey, String, Text, create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.models import PatientMaster, PatientRecord, PatientTransaction
@@ -77,6 +77,32 @@ class PatientTransactionRow(Base):
 
 
 Base.metadata.create_all(engine)
+
+
+def _run_migrations() -> None:
+    """Add missing columns to existing tables (safe to run on every startup)."""
+    migrations = [
+        "ALTER TABLE patient_records ADD COLUMN IF NOT EXISTS clinic_id VARCHAR",
+        "ALTER TABLE patient_records ADD COLUMN IF NOT EXISTS doctor_id_number VARCHAR",
+        "ALTER TABLE patient_records ADD COLUMN IF NOT EXISTS specialty VARCHAR",
+        "ALTER TABLE patient_master ADD COLUMN IF NOT EXISTS clinic_id VARCHAR",
+        "ALTER TABLE patient_master ADD COLUMN IF NOT EXISTS doctor_id_number VARCHAR",
+        "ALTER TABLE patient_master ADD COLUMN IF NOT EXISTS specialty VARCHAR",
+        "ALTER TABLE patient_transactions ADD COLUMN IF NOT EXISTS clinic_id VARCHAR",
+        "ALTER TABLE patient_transactions ADD COLUMN IF NOT EXISTS doctor_id_number VARCHAR",
+        "ALTER TABLE patient_transactions ADD COLUMN IF NOT EXISTS specialty VARCHAR",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions TEXT",
+    ]
+    with engine.connect() as conn:
+        for sql in migrations:
+            try:
+                conn.execute(text(sql))
+            except Exception:
+                pass
+        conn.commit()
+
+
+_run_migrations()
 
 
 def seed_demo_data(session) -> None:
