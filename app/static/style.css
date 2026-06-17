@@ -252,6 +252,7 @@ label {
 
 input[type="text"],
 input[type="number"],
+input[type="password"],
 textarea {
     width: 100%;
     padding: 0.6rem 0.9rem;
@@ -267,6 +268,7 @@ textarea {
 
 input[type="text"]:focus,
 input[type="number"]:focus,
+input[type="password"]:focus,
 textarea:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(26,86,219,.12);
