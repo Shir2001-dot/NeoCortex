@@ -97,6 +97,12 @@
     <!-- MAIN CONTENT -->
     <main class="main-content">
 
+        <!-- Inactivity warning banner -->
+        <div id="inactivity-warning" class="hidden" style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:.6rem 1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;font-size:.88rem;color:#856404">
+            <span>⚠️ המערכת תתנתק אוטומטית בעוד דקה בשל חוסר פעילות</span>
+            <button onclick="resetInactivityTimer()" style="background:#ffc107;border:none;border-radius:6px;padding:.2rem .7rem;cursor:pointer;font-weight:600;font-size:.82rem">אני כאן</button>
+        </div>
+
         <!-- VIEW: SEARCH -->
         <div class="view active" id="view-search">
             <div class="view-header">

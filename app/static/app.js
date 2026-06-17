@@ -13,6 +13,33 @@ const interactionsContent = document.getElementById("interactions-content");
 
 let currentPatientId = null;
 let currentRecord = null;
+
+// ─── Auto-logout after 15 minutes inactivity ───
+const INACTIVITY_MS = 15 * 60 * 1000;
+const WARN_MS       = 14 * 60 * 1000;
+let inactivityTimer, warnTimer;
+
+function resetInactivityTimer() {
+    clearTimeout(inactivityTimer);
+    clearTimeout(warnTimer);
+    const warning = document.getElementById("inactivity-warning");
+    if (warning) warning.classList.add("hidden");
+
+    warnTimer = setTimeout(() => {
+        const w = document.getElementById("inactivity-warning");
+        if (w) w.classList.remove("hidden");
+    }, WARN_MS);
+
+    inactivityTimer = setTimeout(async () => {
+        await fetch("/auth/logout", { method: "POST", credentials: "include" });
+        location.href = "/login";
+    }, INACTIVITY_MS);
+}
+
+["mousemove", "keydown", "click", "scroll", "touchstart"].forEach(evt =>
+    document.addEventListener(evt, resetInactivityTimer, { passive: true })
+);
+resetInactivityTimer();
 let currentTab = "text";
 
 function networkErrMsg(e) {
