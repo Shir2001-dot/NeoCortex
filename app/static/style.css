@@ -674,12 +674,12 @@ input[type="file"]:hover { border-color: var(--primary); }
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,.35);
+    background: rgba(0,0,0,.45);
     z-index: 200;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
+    padding: 2rem 1rem;
 }
 
 .modal-overlay.hidden { display: none; }
@@ -687,21 +687,27 @@ input[type="file"]:hover { border-color: var(--primary); }
 .modal-box {
     background: #fff;
     border-radius: 12px;
-    box-shadow: 0 16px 48px rgba(0,0,0,.18);
+    box-shadow: 0 16px 48px rgba(0,0,0,.22);
     width: 100%;
     max-width: 780px;
-    max-height: 90vh;
+    max-height: 88vh;
     overflow-y: auto;
+    position: relative;
 }
 
 .modal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1rem 1.25rem;
+    padding: 1rem 1.5rem;
     border-bottom: 1px solid var(--border);
     font-weight: 700;
-    font-size: 0.95rem;
+    font-size: 1rem;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 10;
+    border-radius: 12px 12px 0 0;
 }
 
 .modal-close {
