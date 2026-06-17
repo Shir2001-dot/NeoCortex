@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -72,3 +73,27 @@ class DecisionResult(BaseModel):
     recommended_actions: list[str] = Field(default_factory=list)
     summary: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class TransactionType(str, Enum):
+    referral = "referral"
+    hospitalization = "hospitalization"
+    visit = "visit"
+    test = "test"
+
+
+class PatientTransaction(BaseModel):
+    transaction_id: str
+    patient_id: str
+    date: str
+    transaction_type: TransactionType = TransactionType.referral
+    raw_text: str = ""
+    extracted: PatientRecord
+
+
+class PatientMaster(BaseModel):
+    patient_id: str
+    full_name: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    transactions: list[PatientTransaction] = []
