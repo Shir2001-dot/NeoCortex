@@ -18,6 +18,7 @@ Respond with ONLY a JSON object matching this shape (omit fields you cannot find
 use null where appropriate):
 
 {
+  "id_number": string | null,
   "full_name": string | null,
   "date_of_birth": string | null,
   "gender": string | null,
@@ -68,8 +69,12 @@ def extract_patient_data(patient_id: str, raw_text: str, source: str) -> Patient
         raise ValueError(f"Claude returned empty response. stop_reason={response.stop_reason}")
     extracted = parse_json_response(response.content[0].text)
 
+    # Use id_number from document as patient_id if available
+    id_number = extracted.pop("id_number", None)
+    effective_id = (str(id_number).strip() if id_number else None) or patient_id
+
     return PatientRecord(
-        patient_id=patient_id,
+        patient_id=effective_id,
         source=source,
         raw_text=raw_text,
         **extracted,

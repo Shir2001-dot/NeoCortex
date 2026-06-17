@@ -170,8 +170,7 @@ function renderDecision(result) {
 
 // ─── Ingest ───
 ingestBtn.addEventListener("click", async () => {
-    const patientId = document.getElementById("patient-id").value.trim();
-    if (!patientId) { setStatus("ingest","נא למלא מזהה מטופל","error"); return; }
+    const patientId = "auto-" + Date.now();
 
     setStatus("ingest","מעבד מסמך...","loading");
     ingestBtn.disabled = true;
