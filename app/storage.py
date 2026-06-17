@@ -128,6 +128,10 @@ def _run_migrations() -> None:
         "ALTER TABLE patient_transactions ADD COLUMN IF NOT EXISTS doctor_id_number VARCHAR",
         "ALTER TABLE patient_transactions ADD COLUMN IF NOT EXISTS specialty VARCHAR",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions TEXT",
+        # Fix: convert JSON columns to TEXT to support encrypted data
+        "ALTER TABLE patient_records ALTER COLUMN data TYPE TEXT USING data::TEXT",
+        "ALTER TABLE patient_transactions ALTER COLUMN extracted_json TYPE TEXT USING extracted_json::TEXT",
+        "ALTER TABLE patient_transactions ALTER COLUMN raw_text TYPE TEXT USING raw_text::TEXT",
     ]
     with engine.connect() as conn:
         for sql in migrations:
