@@ -551,6 +551,7 @@ function renderInteractions(result) {
                 <div class="flag-severity">${esc(item.severity)}</div>
                 <div style="font-size:.82rem;color:var(--text-secondary);margin-bottom:.2rem">${item.drugs.map(d => esc(d)).join(" ← ")}</div>
                 <div class="flag-msg">${esc(item.description)}</div>
+                <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem;font-style:italic">⚠️ יש לאמת מידע זה מול מקור רפואי מוסמך</div>
             </div>
         </div>
     `).join("");
