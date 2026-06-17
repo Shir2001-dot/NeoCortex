@@ -141,8 +141,14 @@
                         <button type="button" id="summary-close" class="modal-close">✕</button>
                     </div>
                     <div class="modal-body">
-                        <label style="font-size:.82rem;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:.4rem">הערות הרופא מהפגישה</label>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">
+                            <label style="font-size:.82rem;font-weight:600;color:var(--text-secondary)">הערות הרופא מהפגישה</label>
+                            <button type="button" id="mic-btn" title="הקלטה קולית" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:.3rem .6rem;cursor:pointer;font-size:1rem;display:flex;align-items:center;gap:.3rem;color:var(--text-secondary);transition:all .2s">
+                                🎙️ <span id="mic-label" style="font-size:.78rem;font-weight:600">הקלט</span>
+                            </button>
+                        </div>
                         <textarea id="summary-notes" placeholder="לדוגמה: מצב רוח השתפר, המשך אמיטריפטילין, תלונה על שינה, הפנייה לקליניקת שינה" style="min-height:100px"></textarea>
+                        <div id="mic-status" style="font-size:.78rem;color:var(--primary);min-height:1.2rem;margin-top:.25rem"></div>
                         <div class="actions-row" style="margin-top:.75rem">
                             <button type="button" class="btn btn-primary" id="summary-generate-btn">⚡ צור סיכום</button>
                             <div class="status" id="summary-status">
