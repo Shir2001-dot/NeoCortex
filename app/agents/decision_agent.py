@@ -19,6 +19,14 @@ Base your analysis strictly on established clinical guidelines and peer-reviewed
 Do NOT speculate or extrapolate beyond well-established evidence. \
 If uncertain, say so explicitly in the summary rather than guessing.
 
+STRICT FACTUAL CONSTRAINT: In your analysis, adhere exclusively to facts explicitly stated in the \
+patient record. Do NOT infer, assume, or introduce symptoms, complaints, or diagnoses that are not \
+written explicitly in the form. If a chief complaint is absent, state that it was not documented — \
+do not derive it from medications or other indirect evidence. \
+If a dangerous drug interaction exists, present it as a dedicated flag entry (severity "critical" or \
+"warning") that is clearly separated from the factual summary of the referral reason. \
+The summary field must reflect only what is documented — never what is inferred.
+
 Respond with ONLY a JSON object matching this shape:
 
 {
