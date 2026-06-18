@@ -22,6 +22,7 @@ from app.auth import (
 
 from app.agents.decision_agent import evaluate_patient
 from app.agents.delta_agent import compute_delta
+from app.agents.discharge_agent import generate_discharge_letter
 from app.agents.ingestion_agent import extract_patient_data
 from app.agents.interactions_agent import check_interactions
 from app.agents.validity_agent import check_medication_validity
@@ -645,6 +646,19 @@ async def session_summary_by_internal_id(internal_id: str, request: SessionSumma
         previous_summary=previous_summary,
     )
     return SessionSummaryResult(patient_id=patient_id, summary=summary)
+
+
+@app.post("/p/{internal_id}/discharge-letter")
+async def discharge_letter_by_internal_id(internal_id: str, user: dict = Depends(require_permission("clinical_analysis"))):
+    record = get_record_by_internal_id(internal_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    doctor_name = user.get("full_name") if user.get("role") == "doctor" else None
+    doctor_specialty = user.get("specialty") if user.get("role") == "doctor" else None
+    log_action(user["id_number"], "discharge_letter", user_name=user.get("full_name"),
+               clinic_id=user.get("clinic_id"), patient_id=record.patient_id)
+    result = generate_discharge_letter(record, doctor_name=doctor_name, doctor_specialty=doctor_specialty)
+    return result
 
 
 @app.post("/p/{internal_id}/save-summary", response_model=PatientTransaction)

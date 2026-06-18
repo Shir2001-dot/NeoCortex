@@ -4,6 +4,7 @@ const decisionBtn     = document.getElementById("decision-btn");
 const vitalsBtn       = document.getElementById("vitals-btn");
 const interactionsBtn = document.getElementById("interactions-btn");
 const validityBtn     = document.getElementById("validity-btn");
+const dischargeBtn    = document.getElementById("discharge-btn");
 const printBtn        = document.getElementById("print-btn");
 const searchBtn       = document.getElementById("search-btn");
 const decisionCard        = document.getElementById("decision-card");
@@ -819,6 +820,69 @@ async function loadSecretaryPatientList() {
     } catch(e) {
         listEl.innerHTML = `<div style="color:var(--error);font-size:.85rem">שגיאה בטעינת המטופלים</div>`;
     }
+}
+
+// ─── Discharge Letter ───
+async function generateDischargeLetter() {
+    if (!currentPatientInternalId) return;
+    const card = document.getElementById("discharge-card");
+    card.classList.add("hidden");
+    setStatus("discharge", "יוצר מכתב שחרור...", "loading");
+    try {
+        const res = await fetch(`/p/${encodeURIComponent(currentPatientInternalId)}/discharge-letter`, {
+            method: "POST", credentials: "include"
+        });
+        if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
+        const result = await res.json();
+        setStatus("discharge", "", "");
+        const letter = result.letter || "";
+        document.getElementById("discharge-letter-text").textContent = letter;
+        document.getElementById("discharge-patient-name").textContent = currentRecord?.full_name || "";
+        document.getElementById("discharge-date").textContent = new Date().toLocaleDateString("he-IL");
+        card.classList.remove("hidden");
+    } catch(e) {
+        setStatus("discharge", e.message, "error");
+    }
+}
+
+if (dischargeBtn) dischargeBtn.addEventListener("click", generateDischargeLetter);
+
+const dischargeCopyBtn = document.getElementById("discharge-copy-btn");
+if (dischargeCopyBtn) {
+    dischargeCopyBtn.addEventListener("click", () => {
+        const text = document.getElementById("discharge-letter-text").textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            dischargeCopyBtn.textContent = "✓ הועתק";
+            setTimeout(() => { dischargeCopyBtn.textContent = "📋 העתק"; }, 2000);
+        });
+    });
+}
+
+const dischargePrintBtn = document.getElementById("discharge-print-btn");
+if (dischargePrintBtn) {
+    dischargePrintBtn.addEventListener("click", () => {
+        const letter = document.getElementById("discharge-letter-text").textContent;
+        const doctorName = document.getElementById("discharge-doctor-name").value;
+        const patientName = currentRecord?.full_name || "";
+        const date = new Date().toLocaleDateString("he-IL");
+        const w = window.open("", "_blank");
+        w.document.write(`<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8">
+<title>מכתב שחרור</title>
+<style>body{font-family:Arial,sans-serif;font-size:13px;padding:32px;direction:rtl;color:#111}
+h1{font-size:18px;margin-bottom:4px}.meta{color:#666;font-size:11px;margin-bottom:20px;border-bottom:1px solid #e5e7eb;padding-bottom:8px}
+pre{white-space:pre-wrap;font-family:Arial,sans-serif;font-size:13px;line-height:1.6}
+.footer{margin-top:32px;border-top:1px solid #e5e7eb;padding-top:12px;font-size:12px}
+.disclaimer{font-size:10px;color:#9ca3af;margin-top:12px}
+@media print{button{display:none}}</style></head><body>
+<h1>מכתב שחרור / סיכום ביקור</h1>
+<div class="meta">${patientName} &nbsp;|&nbsp; ${date}</div>
+<pre>${letter}</pre>
+<div class="footer">חתימת הרופא: ${doctorName || "_________________"}</div>
+<div class="disclaimer">מסמך זה הופק כטיוטה על ידי מערכת NeoCortex AI ומחייב אישור הרופא המטפל.</div>
+<script>window.onload=function(){window.print()}<\/script>
+</body></html>`);
+        w.document.close();
+    });
 }
 
 const logoutBtn = document.getElementById("logout-btn");

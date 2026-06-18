@@ -91,6 +91,10 @@
                 <span class="sidebar-icon">📝</span>
                 <span class="sidebar-label">סיכום פגישה</span>
             </button>
+            <button class="sidebar-item sidebar-clinical hidden" data-view="discharge" id="nav-discharge">
+                <span class="sidebar-icon">📄</span>
+                <span class="sidebar-label">מכתב שחרור</span>
+            </button>
         </nav>
 
         <div class="sidebar-footer">
@@ -286,6 +290,44 @@
                             <button type="button" class="btn btn-primary" id="summary-save-btn">💾 שמור בתיק</button>
                         </div>
                         <div class="status" id="save-summary-status"><span id="save-summary-msg"></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: DISCHARGE LETTER -->
+        <div class="view hidden" id="view-discharge">
+            <div class="view-header">
+                <h1 class="view-title">📄 מכתב שחרור</h1>
+                <button type="button" class="btn btn-primary" id="discharge-btn">⚡ צור מכתב</button>
+            </div>
+            <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:.65rem 1rem;margin-bottom:.75rem;font-size:.83rem;color:#856404">
+                ✏️ <strong>טיוטה בלבד:</strong> המכתב נוצר אוטומטית ומחייב עיון ואישור הרופא המטפל לפני שליחה.
+            </div>
+            <div class="status" id="discharge-status" style="margin-bottom:.75rem">
+                <div class="spinner" id="discharge-spinner"></div>
+                <span id="discharge-msg"></span>
+            </div>
+            <div class="card hidden" id="discharge-card">
+                <div class="card-body">
+                    <div class="medical-doc">
+                        <div class="edit-hint">✏️ ניתן לערוך ישירות</div>
+                        <div class="medical-doc-title">מכתב שחרור / סיכום ביקור</div>
+                        <div class="medical-doc-meta">
+                            <span id="discharge-patient-name"></span>
+                            <span id="discharge-date"></span>
+                        </div>
+                        <div class="medical-doc-divider"></div>
+                        <div id="discharge-letter-text" class="medical-doc-body" contenteditable="true" style="white-space:pre-wrap;min-height:300px"></div>
+                        <div class="medical-doc-divider" style="margin-top:1rem"></div>
+                        <div class="medical-doc-footer">
+                            <span>חתימת הרופא:</span>
+                            <input type="text" id="discharge-doctor-name" placeholder="ד״ר שם" style="border:none;border-bottom:1px solid #9ca3af;outline:none;width:140px;background:transparent;font-size:.85rem;padding:.1rem .3rem" />
+                        </div>
+                    </div>
+                    <div class="actions-row" style="margin-top:.75rem;justify-content:flex-end;gap:.5rem">
+                        <button type="button" class="btn btn-outline" id="discharge-copy-btn">📋 העתק</button>
+                        <button type="button" class="btn btn-outline" id="discharge-print-btn">🖨️ הדפס</button>
                     </div>
                 </div>
             </div>
