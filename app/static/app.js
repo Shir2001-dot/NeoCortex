@@ -135,7 +135,7 @@ function renderRecord(r) {
     recordContent.innerHTML = `
         <table class="clinical-table" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:1rem">
             ${clinicalRow("שם מלא", esc(r.full_name) || "—")}
-            ${clinicalRow("תאריך לידה", esc(r.date_of_birth) || "—")}
+            ${clinicalRow("תאריך לידה", `<span style="white-space:nowrap">${esc(r.date_of_birth) || "—"}</span>`)}
             ${clinicalRow("מגדר", esc(r.gender) || "—")}
             ${v.heart_rate ? clinicalRow("דופק", v.heart_rate + " bpm") : ""}
             ${v.blood_pressure_systolic ? clinicalRow('ל"ד', bp) : ""}
