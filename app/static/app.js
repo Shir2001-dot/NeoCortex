@@ -501,8 +501,8 @@ document.getElementById("summary-save-btn").addEventListener("click", async () =
 });
 
 // ─── Medication Validity ───
-const VALIDITY_COLORS = { "פג תוקף": "critical", "לאימות": "warning", "לחידוש מרשם": "warning", "בתוקף": "info" };
-const VALIDITY_ICONS  = { "פג תוקף": "🔴", "לאימות": "🟡", "לחידוש מרשם": "🟡", "בתוקף": "🟢" };
+const VALIDITY_COLORS = { "דורש בדיקה": "warning", "בתוקף": "info", "פג תוקף": "critical", "לאימות": "warning", "לחידוש מרשם": "warning" };
+const VALIDITY_ICONS  = { "דורש בדיקה": "🟡", "בתוקף": "🟢", "פג תוקף": "🔴", "לאימות": "🟡", "לחידוש מרשם": "🟡" };
 
 validityBtn?.addEventListener("click", async () => {
     if (!currentPatientInternalId) return;
@@ -531,6 +531,9 @@ validityBtn?.addEventListener("click", async () => {
                         <span style="background:#f3f4f6;padding:.1rem .4rem;border-radius:3px">${esc(item.status)}</span>
                     </div>
                     <div class="flag-msg">${esc(item.message)}</div>
+                    ${item.patient_question ? `<div style="margin-top:.4rem;padding:.4rem .6rem;background:#eff6ff;border-radius:6px;font-size:.78rem;color:#1e40af;border-right:3px solid #3b82f6">
+                        💬 <strong>שאל את המטופל:</strong> ${esc(item.patient_question)}
+                    </div>` : ''}
                 </div>
             </div>`).join("");
     } catch(e) {
