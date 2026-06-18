@@ -555,7 +555,7 @@ searchBtn.addEventListener("click", async () => {
     if (!query) { resultsEl.innerHTML = ""; return; }
 
     try {
-        const res = await fetch("/patients");
+        const res = await fetch("/patients", { credentials: "include" });
         if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
         const patients = await res.json();
         const filtered = patients.filter(p =>
@@ -579,7 +579,7 @@ searchBtn.addEventListener("click", async () => {
             item.addEventListener("click", async () => {
                 const pid = item.dataset.id;
                 try {
-                    const recRes = await fetch(`/patients/${encodeURIComponent(pid)}`);
+                    const recRes = await fetch(`/patients/${encodeURIComponent(pid)}`, { credentials: "include" });
                     if (!recRes.ok) throw new Error("מטופל לא נמצא");
                     const record = await recRes.json();
                     currentPatientId = pid;
@@ -787,7 +787,7 @@ async function loadSecretaryPatientList() {
     if (!listEl) return;
     listEl.innerHTML = `<div style="color:var(--muted);font-size:.85rem">טוען...</div>`;
     try {
-        const res = await fetch("/patients");
+        const res = await fetch("/patients", { credentials: "include" });
         if (!res.ok) throw new Error();
         const patients = await res.json();
         if (patients.length === 0) {
