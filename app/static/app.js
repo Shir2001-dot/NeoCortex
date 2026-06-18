@@ -306,7 +306,7 @@ ingestBtn.addEventListener("click", async () => {
         currentPatientInternalId = tx.extracted.internal_id || null;
         currentRecord = tx.extracted;
         const titleEl = document.getElementById("record-card-title");
-        if (titleEl) titleEl.textContent = `תיק מטופל · ת.ז ${tx.patient_id}`;
+        if (titleEl) titleEl.textContent = `תיק מטופל · ${tx.extracted?.full_name || tx.patient_id}`;
         renderRecord(tx.extracted);
         unlockClinicalNav(tx.patient_id);
         updateSidebarPatient(tx.extracted.full_name, tx.patient_id);
@@ -552,7 +552,7 @@ searchBtn.addEventListener("click", async () => {
                     currentPatientInternalId = record.internal_id || null;
                     currentRecord = record;
                     const titleEl = document.getElementById("record-card-title");
-                    if (titleEl) titleEl.textContent = `תיק מטופל · ת.ז ${pid}`;
+                    if (titleEl) titleEl.textContent = `תיק מטופל · ${record.full_name || pid}`;
                     renderRecord(record);
                     unlockClinicalNav(pid);
                     updateSidebarPatient(record.full_name, pid);

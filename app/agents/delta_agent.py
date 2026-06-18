@@ -4,11 +4,15 @@ from app.models import PatientRecord, VisitDelta
 def compute_delta(current: PatientRecord, previous: PatientRecord) -> VisitDelta:
     """Compare two PatientRecords and return what changed between visits."""
 
+    def normalize(s: str) -> str:
+        import re
+        return re.sub(r'\s+', ' ', s.strip().lower())
+
     def meds_set(r: PatientRecord) -> set:
-        return set(r.medications or [])
+        return set(normalize(m) for m in (r.medications or []))
 
     def symptoms_set(r: PatientRecord) -> set:
-        return set(r.symptoms or [])
+        return set(normalize(s) for s in (r.symptoms or []))
 
     curr_meds = meds_set(current)
     prev_meds = meds_set(previous)
