@@ -563,3 +563,60 @@ async def run_interactions_by_internal_id(
     log_action(user["id_number"], "drug_interactions", user_name=user.get("full_name"),
                clinic_id=user.get("clinic_id"), patient_id=record.patient_id)
     return check_interactions(record.patient_id, record.medications)
+
+
+@app.patch("/p/{internal_id}/vitals", response_model=PatientRecord)
+async def update_vitals_by_internal_id(internal_id: str, vitals: VitalsUpdateRequest, user: dict = Depends(require_permission("edit_records"))) -> PatientRecord:
+    record = get_record_by_internal_id(internal_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    current = record.vitals or VitalSigns()
+    updated = current.model_copy(update={k: v for k, v in vitals.model_dump().items() if v is not None})
+    record.vitals = updated
+    save_record(record)
+    return record
+
+
+@app.post("/p/{internal_id}/session-summary", response_model=SessionSummaryResult)
+async def session_summary_by_internal_id(internal_id: str, request: SessionSummaryRequest, user: dict = Depends(require_permission("session_summary"))) -> SessionSummaryResult:
+    record = get_record_by_internal_id(internal_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    if not request.notes or not request.notes.strip():
+        raise HTTPException(status_code=400, detail="Notes cannot be empty")
+    patient_id = record.patient_id
+    transactions = get_transactions(patient_id)
+    previous_summary = None
+    if len(transactions) > 1:
+        prev = transactions[1].extracted
+        previous_summary = prev.chief_complaint
+    summary = generate_session_summary(
+        patient_name=record.full_name or patient_id,
+        notes=request.notes,
+        previous_summary=previous_summary,
+    )
+    return SessionSummaryResult(patient_id=patient_id, summary=summary)
+
+
+@app.post("/p/{internal_id}/save-summary", response_model=PatientTransaction)
+async def save_summary_by_internal_id(internal_id: str, request: SaveSummaryRequest, user: dict = Depends(require_permission("session_summary"))) -> PatientTransaction:
+    record = get_record_by_internal_id(internal_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    patient_id = record.patient_id
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    note = f"סיכום ביקור {today}"
+    if request.doctor_name:
+        note += f" | ד\"ר {request.doctor_name}"
+    note += f"\n\n{request.summary}"
+    visit_record = record.model_copy(update={"chief_complaint": note, "source": "visit"})
+    tx = PatientTransaction(
+        transaction_id=str(uuid.uuid4()),
+        patient_id=patient_id,
+        date=today,
+        transaction_type="visit",
+        raw_text=request.summary,
+        extracted=visit_record,
+    )
+    save_transaction(tx)
+    return tx

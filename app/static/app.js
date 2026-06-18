@@ -277,7 +277,10 @@ vitalsBtn.addEventListener("click", async () => {
     }
 
     try {
-        const res = await fetch(`/patients/${encodeURIComponent(currentPatientId)}/vitals`, {
+        const vitalsUrl = currentPatientInternalId
+            ? `/p/${encodeURIComponent(currentPatientInternalId)}/vitals`
+            : `/patients/${encodeURIComponent(currentPatientId)}/vitals`;
+        const res = await fetch(vitalsUrl, {
             method: "PATCH",
             headers: {"Content-Type":"application/json"},
             body: JSON.stringify(body),
@@ -379,7 +382,10 @@ document.getElementById("summary-generate-btn").addEventListener("click", async 
     document.getElementById("summary-generate-btn").disabled = true;
 
     try {
-        const res = await fetch(`/patients/${encodeURIComponent(currentPatientId)}/session-summary`, {
+        const summaryUrl = currentPatientInternalId
+            ? `/p/${encodeURIComponent(currentPatientInternalId)}/session-summary`
+            : `/patients/${encodeURIComponent(currentPatientId)}/session-summary`;
+        const res = await fetch(summaryUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ notes }),
@@ -420,7 +426,10 @@ document.getElementById("summary-save-btn").addEventListener("click", async () =
     document.getElementById("save-summary-msg").className = "loading";
 
     try {
-        const res = await fetch(`/patients/${encodeURIComponent(currentPatientId)}/save-summary`, {
+        const saveSummaryUrl = currentPatientInternalId
+            ? `/p/${encodeURIComponent(currentPatientInternalId)}/save-summary`
+            : `/patients/${encodeURIComponent(currentPatientId)}/save-summary`;
+        const res = await fetch(saveSummaryUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ summary, doctor_name: doctorName || null }),
@@ -513,7 +522,10 @@ interactionsBtn.addEventListener("click", async () => {
     interactionsContent.innerHTML = "";
 
     try {
-        const res = await fetch(`/patients/${encodeURIComponent(currentPatientId)}/interactions`, {
+        const interactionsUrl = currentPatientInternalId
+            ? `/p/${encodeURIComponent(currentPatientInternalId)}/interactions`
+            : `/patients/${encodeURIComponent(currentPatientId)}/interactions`;
+        const res = await fetch(interactionsUrl, {
             method: "POST",
         });
         if (!res.ok) {
@@ -558,7 +570,10 @@ decisionBtn.addEventListener("click", async () => {
     decisionBtn.disabled = true;
 
     try {
-        const res = await fetch(`/decision/${encodeURIComponent(currentPatientId)}`, {method:"POST"});
+        const decisionUrl = currentPatientInternalId
+            ? `/p/${encodeURIComponent(currentPatientInternalId)}/decision`
+            : `/decision/${encodeURIComponent(currentPatientId)}`;
+        const res = await fetch(decisionUrl, {method:"POST"});
         if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
         const result = await res.json();
         renderDecision(result);
