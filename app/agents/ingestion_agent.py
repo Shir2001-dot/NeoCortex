@@ -23,6 +23,7 @@ Always extract the VALUE (the part before the colon when reading right-to-left, 
 If the input text is in Hebrew, ALL extracted text fields MUST be written in Hebrew. \
 Translate terms that appear in English in the source into Hebrew where a standard Hebrew medical term exists. \
 \
+For "gender": normalize to "זכר" or "נקבה" only. Common abbreviations: "ז"/"M"/"male" → "זכר", "נ"/"ב"/"F"/"female" → "נקבה". \
 For "medical_history": include ONLY diagnoses and conditions explicitly stated in the text. \
 Do NOT infer conditions from medications. \
 Respond with ONLY a JSON object matching this shape (omit fields you cannot find, \
