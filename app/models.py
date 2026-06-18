@@ -1,9 +1,9 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class VitalSigns(BaseModel):
@@ -48,6 +48,13 @@ class PatientRecord(BaseModel):
     source: str = Field(description="e.g. 'pdf', 'text', 'wearable'")
     raw_text: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    @field_validator('medical_history', mode='before')
+    @classmethod
+    def normalize_medical_history(cls, v):
+        if not v:
+            return []
+        return [{"name": item, "active": True, "onset_date": None} if isinstance(item, str) else item for item in v]
 
 
 class IngestTextRequest(BaseModel):
