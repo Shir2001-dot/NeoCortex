@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from enum import Enum
 from typing import Optional
@@ -24,6 +25,7 @@ class LabResult(BaseModel):
 
 class PatientRecord(BaseModel):
     patient_id: str
+    internal_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     full_name: Optional[str] = None
     date_of_birth: Optional[str] = None
     gender: Optional[str] = None

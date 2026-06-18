@@ -47,6 +47,7 @@ from app.storage import (
     get_master,
     get_patients_by_clinic,
     get_record,
+    get_record_by_internal_id,
     get_transactions,
     get_user_by_id,
     get_users_by_clinic,
@@ -507,3 +508,49 @@ async def run_interactions(
     log_action(user["id_number"], "drug_interactions", user_name=user.get("full_name"),
                clinic_id=user.get("clinic_id"), patient_id=patient_id)
     return check_interactions(patient_id, record.medications)
+
+
+# ── UUID-based routes (internal_id) — avoids exposing national ID in URLs ────
+
+@app.get("/p/{internal_id}", response_model=PatientRecord)
+async def get_patient_by_internal_id(internal_id: str, user: dict = Depends(require_permission("view_records"))) -> PatientRecord:
+    record = get_record_by_internal_id(internal_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    log_action(user["id_number"], "view_patient", user_name=user.get("full_name"),
+               clinic_id=user.get("clinic_id"), patient_id=record.patient_id)
+    return record
+
+
+@app.get("/p/{internal_id}/print")
+async def print_patient_by_internal_id(internal_id: str, user: dict = Depends(require_permission("view_records"))):
+    record = get_record_by_internal_id(internal_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    # Delegate to the existing print logic by calling it directly
+    return await print_patient(record.patient_id, user)
+
+
+@app.post("/p/{internal_id}/decision", response_model=DecisionResult)
+async def run_decision_by_internal_id(internal_id: str, user: dict = Depends(require_permission("clinical_analysis"))) -> DecisionResult:
+    record = get_record_by_internal_id(internal_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    transactions = get_transactions(record.patient_id)
+    history = transactions[1:] if len(transactions) > 1 else []
+    log_action(user["id_number"], "clinical_analysis", user_name=user.get("full_name"),
+               clinic_id=user.get("clinic_id"), patient_id=record.patient_id)
+    return evaluate_patient(record, history=history)
+
+
+@app.post("/p/{internal_id}/interactions", response_model=InteractionsResult)
+async def run_interactions_by_internal_id(
+    internal_id: str,
+    user: dict = Depends(require_permission("drug_interactions")),
+) -> InteractionsResult:
+    record = get_record_by_internal_id(internal_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    log_action(user["id_number"], "drug_interactions", user_name=user.get("full_name"),
+               clinic_id=user.get("clinic_id"), patient_id=record.patient_id)
+    return check_interactions(record.patient_id, record.medications)

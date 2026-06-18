@@ -12,6 +12,7 @@ const decisionContent     = document.getElementById("decision-content");
 const interactionsContent = document.getElementById("interactions-content");
 
 let currentPatientId = null;
+let currentPatientInternalId = null;
 let currentRecord = null;
 
 // ─── Auto-logout after 15 minutes inactivity ───
@@ -244,6 +245,7 @@ ingestBtn.addEventListener("click", async () => {
 
         const tx = await res.json();
         currentPatientId = tx.patient_id;
+        currentPatientInternalId = tx.extracted.internal_id || null;
         currentRecord = tx.extracted;
         const titleEl = document.getElementById("record-card-title");
         if (titleEl) titleEl.textContent = `תיק מטופל · ת.ז ${tx.patient_id}`;
@@ -437,7 +439,10 @@ document.getElementById("summary-save-btn").addEventListener("click", async () =
 // ─── Print / PDF Export ───
 printBtn.addEventListener("click", () => {
     if (!currentPatientId) return;
-    window.open(`/patients/${encodeURIComponent(currentPatientId)}/print`, "_blank");
+    const printUrl = currentPatientInternalId
+        ? `/p/${encodeURIComponent(currentPatientInternalId)}/print`
+        : `/patients/${encodeURIComponent(currentPatientId)}/print`;
+    window.open(printUrl, "_blank");
 });
 
 // ─── Patient Search ───
@@ -475,6 +480,7 @@ searchBtn.addEventListener("click", async () => {
                     if (!recRes.ok) throw new Error("מטופל לא נמצא");
                     const record = await recRes.json();
                     currentPatientId = pid;
+                    currentPatientInternalId = record.internal_id || null;
                     currentRecord = record;
                     const titleEl = document.getElementById("record-card-title");
                     if (titleEl) titleEl.textContent = `תיק מטופל · ת.ז ${pid}`;

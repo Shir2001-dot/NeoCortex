@@ -284,6 +284,19 @@ def get_record(patient_id: str) -> PatientRecord | None:
         return PatientRecord(**_parse(_decrypt(row.data)))
 
 
+def get_record_by_internal_id(internal_id: str) -> PatientRecord | None:
+    with SessionLocal() as session:
+        rows = session.query(PatientRecordRow).all()
+        for row in rows:
+            try:
+                data = _parse(_decrypt(row.data))
+                if data.get("internal_id") == internal_id:
+                    return PatientRecord(**data)
+            except Exception:
+                continue
+        return None
+
+
 def upsert_master(patient_id: str, full_name: str | None, dob: str | None, gender: str | None) -> None:
     with SessionLocal() as session:
         existing = session.get(PatientMasterRow, patient_id)
