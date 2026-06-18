@@ -380,7 +380,7 @@ async def print_patient(patient_id: str, user: dict = Depends(require_permission
         v = record.vitals
         vitals_html = section("מדדים חיוניים", (
             row("דופק", f"{v.heart_rate} bpm" if v.heart_rate else None) +
-            row("לחץ דם", f"{v.systolic_bp}/{v.diastolic_bp} mmHg" if v.systolic_bp and v.diastolic_bp else None) +
+            row("לחץ דם", f"{v.blood_pressure_systolic}/{v.blood_pressure_diastolic} mmHg" if v.blood_pressure_systolic and v.blood_pressure_diastolic else None) +
             row("טמפרטורה", f"{v.temperature_celsius} °C" if v.temperature_celsius else None) +
             row("חמצן בדם", f"{v.spo2_percent}%" if v.spo2_percent else None)
         ))
