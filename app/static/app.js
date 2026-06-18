@@ -284,6 +284,7 @@ vitalsBtn.addEventListener("click", async () => {
             method: "PATCH",
             headers: {"Content-Type":"application/json"},
             body: JSON.stringify(body),
+            credentials: "include",
         });
         if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
         const record = await res.json();
@@ -389,6 +390,7 @@ document.getElementById("summary-generate-btn").addEventListener("click", async 
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ notes }),
+            credentials: "include",
         });
         if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
         const data = await res.json();
@@ -527,6 +529,7 @@ interactionsBtn.addEventListener("click", async () => {
             : `/patients/${encodeURIComponent(currentPatientId)}/interactions`;
         const res = await fetch(interactionsUrl, {
             method: "POST",
+            credentials: "include",
         });
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
@@ -573,7 +576,7 @@ decisionBtn.addEventListener("click", async () => {
         const decisionUrl = currentPatientInternalId
             ? `/p/${encodeURIComponent(currentPatientInternalId)}/decision`
             : `/decision/${encodeURIComponent(currentPatientId)}`;
-        const res = await fetch(decisionUrl, {method:"POST"});
+        const res = await fetch(decisionUrl, {method:"POST", credentials:"include"});
         if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
         const result = await res.json();
         renderDecision(result);
