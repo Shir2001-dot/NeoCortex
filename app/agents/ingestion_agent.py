@@ -36,7 +36,7 @@ use null where appropriate):
   "gender": string | null,
   "chief_complaint": string | null,
   "symptoms": string[],
-  "medical_history": string[],
+  "medical_history": [{"name": string, "active": true, "onset_date": string | null}],
   "medications": string[],
   "allergies": string[],
   "lab_results": [{"name": string, "value": string, "unit": string | null, \

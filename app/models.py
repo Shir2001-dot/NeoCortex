@@ -1,9 +1,9 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class VitalSigns(BaseModel):
@@ -23,6 +23,12 @@ class LabResult(BaseModel):
     flag: Optional[str] = Field(None, description="e.g. 'high', 'low', 'critical'")
 
 
+class MedicalCondition(BaseModel):
+    name: str
+    active: bool = True
+    onset_date: Optional[str] = None
+
+
 class PatientRecord(BaseModel):
     patient_id: str
     internal_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -32,7 +38,7 @@ class PatientRecord(BaseModel):
 
     chief_complaint: Optional[str] = None
     symptoms: list[str] = Field(default_factory=list)
-    medical_history: list[str] = Field(default_factory=list)
+    medical_history: list[MedicalCondition] = Field(default_factory=list)
     medications: list[str] = Field(default_factory=list)
     allergies: list[str] = Field(default_factory=list)
     lab_results: list[LabResult] = Field(default_factory=list)
@@ -42,6 +48,13 @@ class PatientRecord(BaseModel):
     source: str = Field(description="e.g. 'pdf', 'text', 'wearable'")
     raw_text: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    @field_validator('medical_history', mode='before')
+    @classmethod
+    def normalize_medical_history(cls, v):
+        if not v:
+            return []
+        return [{"name": item, "active": True, "onset_date": None} if isinstance(item, str) else item for item in v]
 
 
 class IngestTextRequest(BaseModel):
@@ -66,6 +79,15 @@ class VitalsUpdateRequest(BaseModel):
 class DecisionFlag(BaseModel):
     severity: str = Field(description="'info', 'warning', or 'critical'")
     message: str
+    relevance: str = "background"
+
+
+class VisitDelta(BaseModel):
+    new_medications: list[str] = []
+    removed_medications: list[str] = []
+    new_symptoms: list[str] = []
+    resolved_symptoms: list[str] = []
+    changed_vitals: list[str] = []
 
 
 class DecisionResult(BaseModel):
@@ -74,6 +96,7 @@ class DecisionResult(BaseModel):
     differential_diagnosis: list[str] = Field(default_factory=list)
     recommended_actions: list[str] = Field(default_factory=list)
     summary: Optional[str] = None
+    visit_delta: Optional[VisitDelta] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 

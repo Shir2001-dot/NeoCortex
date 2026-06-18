@@ -112,6 +112,18 @@ function tagList(items) {
     return `<div class="tag-list">${items.map(i=>`<span class="tag">${esc(i)}</span>`).join("")}</div>`;
 }
 
+function conditionList(items) {
+    if (!items?.length) return "<span style='color:var(--muted);font-size:.85rem'>אין נתונים</span>";
+    return `<div class="tag-list">${items.map((c,i) => {
+        const name = typeof c==='string' ? c : c.name;
+        const active = typeof c==='string' ? true : (c.active !== false);
+        const date = (c && c.onset_date) ? ` (${esc(c.onset_date)})` : "";
+        const st = active ? "" : "color:#9ca3af;text-decoration:line-through;opacity:.7";
+        const title = active ? "לחץ לסימון כהיסטורי" : "לחץ לסימון כפעיל";
+        return `<span class="tag condition-tag" style="${st};cursor:pointer" title="${title}" data-idx="${i}">${esc(name)}${date}</span>`;
+    }).join("")}</div>`;
+}
+
 const TX_TYPE_LABELS = {
     referral: "הפניה",
     hospitalization: "אשפוז",
@@ -145,7 +157,7 @@ function renderRecord(r) {
         <table class="clinical-table" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:1rem">
             ${clinicalRow("תלונה עיקרית", esc(r.chief_complaint) || "—")}
             ${clinicalRow("תסמינים", tagList(r.symptoms))}
-            ${clinicalRow("היסטוריה רפואית", tagList(r.medical_history))}
+            ${clinicalRow("היסטוריה רפואית", conditionList(r.medical_history))}
             ${clinicalRow("תרופות", tagList(r.medications))}
             ${clinicalRow("אלרגיות", tagList(r.allergies))}
         </table>
@@ -175,12 +187,47 @@ function populateVitals(v) {
 }
 
 
+recordContent.addEventListener("click", async (e) => {
+    const tag = e.target.closest(".condition-tag");
+    if (!tag || !currentRecord || !currentPatientInternalId) return;
+    const idx = parseInt(tag.dataset.idx);
+    const cond = currentRecord.medical_history[idx];
+    if (!cond) return;
+    if (typeof cond === 'string') {
+        currentRecord.medical_history[idx] = {name: cond, active: false, onset_date: null};
+    } else {
+        cond.active = !cond.active;
+    }
+    await fetch(`/p/${encodeURIComponent(currentPatientInternalId)}/conditions`, {
+        method:"PATCH", credentials:"include",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({conditions: currentRecord.medical_history})
+    });
+    renderRecord(currentRecord);
+});
+
 // ─── Render decision ───
+function renderDelta(delta) {
+    if (!delta) return "";
+    const rows = [
+        ["💊 תרופות חדשות", delta.new_medications],
+        ["🚫 תרופות שהופסקו", delta.removed_medications],
+        ["🆕 תסמינים חדשים", delta.new_symptoms],
+        ["✅ תסמינים שנפתרו", delta.resolved_symptoms],
+        ["📊 שינויים במדדים", delta.changed_vitals],
+    ].filter(([_,items]) => items?.length);
+    if (!rows.length) return "";
+    return `<div class="section-title" style="margin-bottom:.5rem">שינויים מהביקור האחרון</div>
+            <div class="delta-box">${rows.map(([l,items])=>`<div><strong>${l}:</strong> ${items.map(esc).join(", ")}</div>`).join("")}</div>`;
+}
+
 function renderDecision(result) {
-    const flags = (result.flags || []).map(f => `
-        <div class="flag ${f.severity}">
+    const sorted = [...(result.flags||[])].sort((a,b)=> a.relevance==='urgent'?-1:1);
+    const flags = sorted.map(f => `
+        <div class="flag ${esc(f.severity)}${f.relevance==='urgent'?' flag-urgent':''}">
             <div class="flag-dot"></div>
             <div class="flag-body">
+                ${f.relevance==='urgent'?'<span class="flag-badge-urgent">דחוף</span><br>':''}
                 <div class="flag-severity">${esc(f.severity)}</div>
                 <div class="flag-msg">${esc(f.message)}</div>
             </div>
@@ -193,6 +240,7 @@ function renderDecision(result) {
         .map(a => `<li>${esc(a)}</li>`).join("");
 
     decisionContent.innerHTML = `
+        ${renderDelta(result.visit_delta)}
         <div class="section-title">דגלים קליניים</div>
         ${flags || "<p style='color:var(--muted);font-size:.88rem'>אין דגלים</p>"}
         <div class="section-title" style="margin-top:1.25rem">אבחנה מבדלת</div>

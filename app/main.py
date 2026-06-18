@@ -21,6 +21,7 @@ from app.auth import (
 )
 
 from app.agents.decision_agent import evaluate_patient
+from app.agents.delta_agent import compute_delta
 from app.agents.ingestion_agent import extract_patient_data
 from app.agents.interactions_agent import check_interactions
 from app.agents.summary_agent import generate_session_summary
@@ -503,7 +504,14 @@ async def run_decision(patient_id: str, user: dict = Depends(require_permission(
     history = transactions[1:] if len(transactions) > 1 else []
     log_action(user["id_number"], "clinical_analysis", user_name=user.get("full_name"),
                clinic_id=user.get("clinic_id"), patient_id=patient_id)
-    return evaluate_patient(record, history=history)
+    result = evaluate_patient(record, history=history)
+    txs = get_transactions(patient_id)
+    if txs:
+        try:
+            result.visit_delta = compute_delta(record, txs[0].extracted)
+        except Exception:
+            pass
+    return result
 
 
 @app.post("/patients/{patient_id}/interactions", response_model=InteractionsResult)
@@ -549,7 +557,14 @@ async def run_decision_by_internal_id(internal_id: str, user: dict = Depends(req
     history = transactions[1:] if len(transactions) > 1 else []
     log_action(user["id_number"], "clinical_analysis", user_name=user.get("full_name"),
                clinic_id=user.get("clinic_id"), patient_id=record.patient_id)
-    return evaluate_patient(record, history=history)
+    result = evaluate_patient(record, history=history)
+    txs = get_transactions(record.patient_id)
+    if txs:
+        try:
+            result.visit_delta = compute_delta(record, txs[0].extracted)
+        except Exception:
+            pass
+    return result
 
 
 @app.post("/p/{internal_id}/interactions", response_model=InteractionsResult)
@@ -620,3 +635,14 @@ async def save_summary_by_internal_id(internal_id: str, request: SaveSummaryRequ
     )
     save_transaction(tx)
     return tx
+
+@app.patch("/p/{internal_id}/conditions")
+async def update_conditions(internal_id: str, body: dict, user: dict = Depends(require_permission("edit_records"))):
+    record = get_record_by_internal_id(internal_id)
+    if not record:
+        raise HTTPException(404)
+    conditions = body.get("conditions", [])
+    from app.models import MedicalCondition
+    record.medical_history = [MedicalCondition(**c) if isinstance(c, dict) else c for c in conditions]
+    save_record(record)
+    return {"ok": True}
