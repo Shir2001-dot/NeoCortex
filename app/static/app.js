@@ -535,9 +535,11 @@ function renderInteractions(result) {
             <div class="flag-dot"></div>
             <div class="flag-body">
                 <div class="flag-severity">${esc(item.severity)}</div>
-                <div style="font-size:.82rem;color:var(--text-secondary);margin-bottom:.2rem">${item.drugs.map(d => esc(d)).join(" ← ")}</div>
+                <div style="font-size:.82rem;color:var(--text-secondary);margin-bottom:.25rem;font-weight:600">${item.drugs.map(d => esc(d)).join(" + ")}</div>
                 <div class="flag-msg">${esc(item.description)}</div>
-                <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem;font-style:italic">⚠️ יש לאמת מידע זה מול מקור רפואי מוסמך</div>
+                ${item.mechanism ? `<div style="font-size:.8rem;color:var(--text-secondary);margin-top:.35rem"><strong>מנגנון:</strong> ${esc(item.mechanism)}</div>` : ""}
+                ${item.clinical_context ? `<div style="font-size:.8rem;color:var(--text-secondary);margin-top:.25rem"><strong>הקשר קליני:</strong> ${esc(item.clinical_context)}</div>` : ""}
+                <div style="font-size:.72rem;color:var(--muted);margin-top:.4rem;font-style:italic;border-top:1px solid var(--border);padding-top:.3rem">מידע זה מבוסס על מקורות רפואיים מוכרים ואינו מחליף שיקול דעת קליני</div>
             </div>
         </div>
     `).join("");

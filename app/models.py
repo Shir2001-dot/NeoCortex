@@ -117,6 +117,8 @@ class DrugInteraction(BaseModel):
     drugs: list[str]
     severity: str
     description: str
+    mechanism: Optional[str] = None
+    clinical_context: Optional[str] = None
 
 
 class InteractionsResult(BaseModel):
