@@ -158,7 +158,8 @@ class CreateUserRequest(BaseModel):
     specialty: Optional[str] = None
     role: str  # "doctor", "secretary", "admin", "nurse", "intern"
     password: str
-    permissions: Optional[list[str]] = None  # if None, use role defaults
+    permissions: Optional[list[str]] = None
+    email: Optional[str] = None
 
 
 class UserInfo(BaseModel):

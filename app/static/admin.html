@@ -155,6 +155,10 @@
             </select>
         </div>
         <div class="form-group">
+            <label>אימייל (לאיפוס סיסמה)</label>
+            <input type="email" id="new-email" placeholder="doctor@clinic.co.il" />
+        </div>
+        <div class="form-group">
             <label>סיסמה זמנית *</label>
             <input type="password" id="new-password" placeholder="לפחות 6 תווים" />
         </div>
@@ -336,6 +340,7 @@ document.getElementById("add-user-btn").addEventListener("click", async () => {
     const full_name  = document.getElementById("new-name").value.trim();
     const specialty  = document.getElementById("new-specialty").value.trim() || null;
     const role       = document.getElementById("new-role").value;
+    const email      = document.getElementById("new-email").value.trim() || null;
     const password   = document.getElementById("new-password").value;
     const msgEl      = document.getElementById("drawer-msg");
 
@@ -352,13 +357,13 @@ document.getElementById("add-user-btn").addEventListener("click", async () => {
     const res = await api("/admin/users", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({id_number, full_name, specialty, role, password, permissions}),
+        body: JSON.stringify({id_number, full_name, specialty, role, password, permissions, email}),
     });
     if (!res) return;
 
     if (res.ok) {
         msgEl.className = "msg success"; msgEl.textContent = `${full_name} נוסף בהצלחה`; msgEl.style.display = "block";
-        ["new-id","new-name","new-specialty","new-password"].forEach(id => document.getElementById(id).value = "");
+        ["new-id","new-name","new-specialty","new-email","new-password"].forEach(id => document.getElementById(id).value = "");
         document.getElementById("new-role").value = "doctor";
         document.getElementById("new-role").dispatchEvent(new Event("change"));
         loadUsers();

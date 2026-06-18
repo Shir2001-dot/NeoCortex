@@ -55,7 +55,16 @@ class UserRow(Base):
     clinic_id = Column(String, ForeignKey("clinics.id"), nullable=False)
     hashed_password = Column(String, nullable=False)
     permissions = Column(Text, nullable=True)  # JSON list of permission strings
+    email = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class PasswordResetTokenRow(Base):
+    __tablename__ = "password_reset_tokens"
+    token = Column(String, primary_key=True)
+    id_number = Column(String, ForeignKey("users.id_number"), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(String, default="0")
 
 
 # Default permissions per role
@@ -128,6 +137,7 @@ def _run_migrations() -> None:
         "ALTER TABLE patient_transactions ADD COLUMN IF NOT EXISTS doctor_id_number VARCHAR",
         "ALTER TABLE patient_transactions ADD COLUMN IF NOT EXISTS specialty VARCHAR",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions TEXT",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR",
         # Fix: convert JSON columns to TEXT to support encrypted data
         "ALTER TABLE patient_records ALTER COLUMN data TYPE TEXT USING data::TEXT",
         "ALTER TABLE patient_transactions ALTER COLUMN extracted_json TYPE TEXT USING extracted_json::TEXT",
@@ -237,6 +247,54 @@ def delete_user(session, id_number: str) -> bool:
     if user is None:
         return False
     session.delete(user)
+    session.commit()
+    return True
+
+
+def get_user_by_email(session, email: str) -> UserRow | None:
+    return session.query(UserRow).filter_by(email=email).first()
+
+
+def update_user_password(session, id_number: str, new_hashed: str) -> bool:
+    user = session.get(UserRow, id_number)
+    if not user:
+        return False
+    user.hashed_password = new_hashed
+    session.commit()
+    return True
+
+
+def update_user_email(session, id_number: str, email: str) -> bool:
+    user = session.get(UserRow, id_number)
+    if not user:
+        return False
+    user.email = email
+    session.commit()
+    return True
+
+
+def create_reset_token(session, id_number: str) -> str:
+    import secrets
+    from datetime import timedelta
+    token = secrets.token_urlsafe(32)
+    expires = datetime.utcnow() + timedelta(hours=1)
+    session.add(PasswordResetTokenRow(token=token, id_number=id_number, expires_at=expires))
+    session.commit()
+    return token
+
+
+def get_reset_token(session, token: str) -> PasswordResetTokenRow | None:
+    row = session.get(PasswordResetTokenRow, token)
+    if not row or row.used == "1" or row.expires_at < datetime.utcnow():
+        return None
+    return row
+
+
+def consume_reset_token(session, token: str) -> bool:
+    row = session.get(PasswordResetTokenRow, token)
+    if not row:
+        return False
+    row.used = "1"
     session.commit()
     return True
 

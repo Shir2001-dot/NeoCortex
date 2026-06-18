@@ -46,6 +46,7 @@
         </div>
         <div style="width:1px;height:28px;background:rgba(255,255,255,.2)"></div>
         <a id="admin-link" href="/admin" style="display:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:.3rem .7rem;font-size:.78rem;text-decoration:none">ניהול</a>
+        <button id="change-password-btn" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.8);border-radius:6px;padding:.3rem .7rem;font-size:.78rem;cursor:pointer">🔑 סיסמה</button>
         <button id="logout-btn" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:.3rem .7rem;font-size:.78rem;cursor:pointer">יציאה</button>
     </div>
 </header>
@@ -334,6 +335,24 @@
         </div>
 
     </main>
+</div>
+
+<!-- Change Password Modal -->
+<div id="change-pw-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:2rem;width:100%;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+        <h3 style="margin-bottom:1.25rem;font-size:1rem;font-weight:700">🔑 שינוי סיסמה</h3>
+        <div id="change-pw-msg" style="display:none;border-radius:8px;padding:.6rem .9rem;font-size:.85rem;margin-bottom:1rem"></div>
+        <div class="form-group"><label style="font-size:.8rem;font-weight:600;color:var(--text-secondary)">סיסמה נוכחית</label>
+            <input type="password" id="cp-current" placeholder="סיסמה נוכחית" style="width:100%" /></div>
+        <div class="form-group"><label style="font-size:.8rem;font-weight:600;color:var(--text-secondary)">סיסמה חדשה</label>
+            <input type="password" id="cp-new" placeholder="לפחות 6 תווים" style="width:100%" /></div>
+        <div class="form-group"><label style="font-size:.8rem;font-weight:600;color:var(--text-secondary)">אימות סיסמה חדשה</label>
+            <input type="password" id="cp-confirm" placeholder="הכנס שוב" style="width:100%" /></div>
+        <div style="display:flex;gap:.5rem;margin-top:.5rem">
+            <button class="btn btn-primary" id="cp-submit-btn" style="flex:1">שמור</button>
+            <button class="btn btn-outline" id="cp-cancel-btn" style="flex:1">ביטול</button>
+        </div>
+    </div>
 </div>
 
 <script src="/static/app.js"></script>

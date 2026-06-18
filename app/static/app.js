@@ -895,3 +895,58 @@ if (logoutBtn) {
         location.href = "/login";
     });
 }
+
+// ─── Change Password Modal ───
+const changePwBtn = document.getElementById("change-password-btn");
+const changePwModal = document.getElementById("change-pw-modal");
+const cpMsgEl = document.getElementById("change-pw-msg");
+
+function showChangePwModal() {
+    document.getElementById("cp-current").value = "";
+    document.getElementById("cp-new").value = "";
+    document.getElementById("cp-confirm").value = "";
+    cpMsgEl.style.display = "none";
+    changePwModal.style.display = "flex";
+}
+
+if (changePwBtn) changePwBtn.addEventListener("click", showChangePwModal);
+document.getElementById("cp-cancel-btn")?.addEventListener("click", () => { changePwModal.style.display = "none"; });
+
+document.getElementById("cp-submit-btn")?.addEventListener("click", async () => {
+    const current_password = document.getElementById("cp-current").value;
+    const new_password = document.getElementById("cp-new").value;
+    const confirm = document.getElementById("cp-confirm").value;
+    cpMsgEl.style.display = "none";
+
+    if (!current_password || !new_password || !confirm) {
+        cpMsgEl.style.cssText = "display:block;background:#fef2f2;border:1px solid #fca5a5;color:#c81e1e;border-radius:8px;padding:.6rem .9rem;font-size:.85rem;margin-bottom:1rem";
+        cpMsgEl.textContent = "נא למלא את כל השדות"; return;
+    }
+    if (new_password.length < 6) {
+        cpMsgEl.style.cssText = "display:block;background:#fef2f2;border:1px solid #fca5a5;color:#c81e1e;border-radius:8px;padding:.6rem .9rem;font-size:.85rem;margin-bottom:1rem";
+        cpMsgEl.textContent = "הסיסמה החדשה חייבת להכיל לפחות 6 תווים"; return;
+    }
+    if (new_password !== confirm) {
+        cpMsgEl.style.cssText = "display:block;background:#fef2f2;border:1px solid #fca5a5;color:#c81e1e;border-radius:8px;padding:.6rem .9rem;font-size:.85rem;margin-bottom:1rem";
+        cpMsgEl.textContent = "הסיסמאות אינן תואמות"; return;
+    }
+    try {
+        const res = await fetch("/auth/change-password", {
+            method: "POST", headers: {"Content-Type": "application/json"},
+            credentials: "include",
+            body: JSON.stringify({current_password, new_password})
+        });
+        if (res.ok) {
+            cpMsgEl.style.cssText = "display:block;background:#f0fdf4;border:1px solid #86efac;color:#166534;border-radius:8px;padding:.6rem .9rem;font-size:.85rem;margin-bottom:1rem";
+            cpMsgEl.textContent = "✓ הסיסמה שונתה בהצלחה";
+            setTimeout(() => { changePwModal.style.display = "none"; }, 1500);
+        } else {
+            const data = await res.json();
+            cpMsgEl.style.cssText = "display:block;background:#fef2f2;border:1px solid #fca5a5;color:#c81e1e;border-radius:8px;padding:.6rem .9rem;font-size:.85rem;margin-bottom:1rem";
+            cpMsgEl.textContent = data.detail || "שגיאה";
+        }
+    } catch(e) {
+        cpMsgEl.style.cssText = "display:block;background:#fef2f2;border:1px solid #fca5a5;color:#c81e1e;border-radius:8px;padding:.6rem .9rem;font-size:.85rem;margin-bottom:1rem";
+        cpMsgEl.textContent = "שגיאת רשת, נסה שוב";
+    }
+});

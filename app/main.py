@@ -47,6 +47,8 @@ from app.models import (
 from app.pdf_utils import extract_text_from_pdf
 from app.storage import (
     SessionLocal,
+    consume_reset_token,
+    create_reset_token,
     create_user,
     delete_user,
     get_audit_log,
@@ -55,7 +57,9 @@ from app.storage import (
     get_patients_by_clinic,
     get_record,
     get_record_by_internal_id,
+    get_reset_token,
     get_transactions,
+    get_user_by_email,
     get_user_by_id,
     get_users_by_clinic,
     list_patients,
@@ -63,6 +67,8 @@ from app.storage import (
     save_record,
     save_transaction,
     seed_demo_data,
+    update_user_email,
+    update_user_password,
     upsert_master,
 )
 
@@ -131,6 +137,106 @@ async def me(user: dict = Depends(get_current_user)):
     return user
 
 
+@app.post("/auth/change-password")
+async def change_password(body: dict, user: dict = Depends(get_current_user)):
+    current = body.get("current_password", "")
+    new_pw = body.get("new_password", "")
+    if not current or not new_pw:
+        raise HTTPException(status_code=400, detail="נדרשות סיסמה נוכחית וסיסמה חדשה")
+    if len(new_pw) < 6:
+        raise HTTPException(status_code=400, detail="הסיסמה החדשה חייבת להכיל לפחות 6 תווים")
+    with SessionLocal() as session:
+        db_user = get_user_by_id(session, user["id_number"])
+        if not db_user or not verify_password(current, db_user.hashed_password):
+            raise HTTPException(status_code=401, detail="הסיסמה הנוכחית שגויה")
+        update_user_password(session, user["id_number"], hash_password(new_pw))
+    log_action(user["id_number"], "change_password", user_name=user.get("full_name"), clinic_id=user.get("clinic_id"))
+    return {"ok": True}
+
+
+@app.post("/auth/forgot-password")
+@limiter.limit("5/minute")
+async def forgot_password(request: Request, body: dict):
+    id_number = body.get("id_number", "").strip()
+    email = body.get("email", "").strip().lower()
+    if not id_number or not email:
+        raise HTTPException(status_code=400, detail="נדרשים תעודת זהות ואימייל")
+    with SessionLocal() as session:
+        user = get_user_by_id(session, id_number)
+        # Always return OK to avoid user enumeration
+        if not user or (user.email or "").lower() != email:
+            return {"ok": True, "msg": "אם הפרטים נכונים, נשלח אליך מייל לאיפוס סיסמה"}
+        token = create_reset_token(session, id_number)
+        _send_reset_email(email, user.full_name, token)
+    return {"ok": True, "msg": "אם הפרטים נכונים, נשלח אליך מייל לאיפוס סיסמה"}
+
+
+@app.post("/auth/reset-password")
+async def reset_password(body: dict):
+    token = body.get("token", "").strip()
+    new_pw = body.get("new_password", "")
+    if not token or not new_pw:
+        raise HTTPException(status_code=400, detail="נדרשים טוקן וסיסמה חדשה")
+    if len(new_pw) < 6:
+        raise HTTPException(status_code=400, detail="הסיסמה חייבת להכיל לפחות 6 תווים")
+    with SessionLocal() as session:
+        row = get_reset_token(session, token)
+        if not row:
+            raise HTTPException(status_code=400, detail="הקישור פג תוקף או כבר נוצל")
+        update_user_password(session, row.id_number, hash_password(new_pw))
+        consume_reset_token(session, token)
+    return {"ok": True}
+
+
+@app.patch("/admin/users/{id_number}/email")
+async def set_user_email(id_number: str, body: dict, user: dict = Depends(require_admin)):
+    email = body.get("email", "").strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="כתובת אימייל לא תקינה")
+    with SessionLocal() as session:
+        ok = update_user_email(session, id_number, email)
+        if not ok:
+            raise HTTPException(status_code=404, detail="משתמש לא נמצא")
+    return {"ok": True}
+
+
+def _send_reset_email(to_email: str, full_name: str, token: str) -> None:
+    import smtplib
+    from email.mime.text import MIMEText
+    smtp_host = os.environ.get("SMTP_HOST", "")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+    from_email = os.environ.get("SMTP_FROM", smtp_user)
+    base_url = os.environ.get("BASE_URL", "https://neocortex-api.onrender.com")
+    if not smtp_host or not smtp_user:
+        # Dev mode: just print the link
+        print(f"[DEV] Password reset link for {to_email}: {base_url}/reset-password?token={token}")
+        return
+    reset_url = f"{base_url}/reset-password?token={token}"
+    body = f"""שלום {full_name},
+
+קיבלנו בקשה לאיפוס הסיסמה שלך במערכת NeoCortex AI.
+
+לאיפוס הסיסמה לחץ על הקישור:
+{reset_url}
+
+הקישור תקף לשעה אחת.
+
+אם לא ביקשת לאפס סיסמה, התעלם ממייל זה.
+
+NeoCortex AI
+"""
+    msg = MIMEText(body, "plain", "utf-8")
+    msg["Subject"] = "איפוס סיסמה — NeoCortex AI"
+    msg["From"] = from_email
+    msg["To"] = to_email
+    with smtplib.SMTP(smtp_host, smtp_port) as server:
+        server.starttls()
+        server.login(smtp_user, smtp_pass)
+        server.sendmail(from_email, [to_email], msg.as_string())
+
+
 # Legacy login/logout (form-based, kept for compatibility)
 @app.post("/login")
 async def do_login_legacy(username: str = Form(...), password: str = Form(...)):
@@ -170,6 +276,16 @@ async def index(neocortex_token: Optional[str] = Cookie(default=None)) -> FileRe
     if not neocortex_token:
         return RedirectResponse("/login")
     return FileResponse("app/static/index.html")
+
+
+@app.get("/forgot-password")
+async def forgot_password_page() -> FileResponse:
+    return FileResponse("app/static/forgot-password.html")
+
+
+@app.get("/reset-password")
+async def reset_password_page() -> FileResponse:
+    return FileResponse("app/static/reset-password.html")
 
 
 @app.get("/admin")
@@ -232,6 +348,8 @@ async def add_user(req: CreateUserRequest, user: dict = Depends(require_admin)):
             hashed_password=hashed,
             permissions=permissions,
         )
+        if req.email:
+            update_user_email(session, req.id_number, req.email)
         return {
             "id_number": new_user.id_number,
             "full_name": new_user.full_name,
