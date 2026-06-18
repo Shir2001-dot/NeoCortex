@@ -133,14 +133,14 @@ function renderRecord(r) {
         : "—";
 
     recordContent.innerHTML = `
-        <div class="info-grid" style="margin-bottom:1rem">
-            ${infoCell("שם מלא", r.full_name)}
-            ${infoCell("תאריך לידה", r.date_of_birth)}
-            ${infoCell("מגדר", r.gender)}
-            ${infoCell("דופק", v.heart_rate ? v.heart_rate + " bpm" : null)}
-            ${infoCell('ל"ד', bp)}
-            ${infoCell("חמצן בדם SpO2", v.spo2_percent ? v.spo2_percent + "%" : null)}
-        </div>
+        <table class="clinical-table" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:1rem">
+            ${clinicalRow("שם מלא", esc(r.full_name) || "—")}
+            ${clinicalRow("תאריך לידה", esc(r.date_of_birth) || "—")}
+            ${clinicalRow("מגדר", esc(r.gender) || "—")}
+            ${v.heart_rate ? clinicalRow("דופק", v.heart_rate + " bpm") : ""}
+            ${v.blood_pressure_systolic ? clinicalRow('ל"ד', bp) : ""}
+            ${v.spo2_percent ? clinicalRow("חמצן בדם SpO2", v.spo2_percent + "%") : ""}
+        </table>
         <table class="clinical-table" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:1rem">
             ${clinicalRow("תלונה עיקרית", esc(r.chief_complaint) || "—")}
             ${clinicalRow("תסמינים", tagList(r.symptoms))}
