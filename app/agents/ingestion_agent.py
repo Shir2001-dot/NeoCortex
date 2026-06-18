@@ -49,7 +49,8 @@ use null where appropriate):
     "respiratory_rate": number | null,
     "spo2_percent": number | null
   } | null,
-  "referral_reason": string | null
+  "referral_reason": string | null,
+  "referral_date": string | null
 }
 
 Do not include any explanation or markdown formatting, only the raw JSON object.

@@ -583,7 +583,7 @@ async def check_validity_by_internal_id(
     record = get_record_by_internal_id(internal_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Patient not found")
-    referral_date = record.created_at.strftime("%Y-%m-%d") if record.created_at else None
+    referral_date = record.referral_date or (record.created_at.strftime("%Y-%m-%d") if record.created_at else None)
     return check_medication_validity(record.patient_id, record.medications, referral_date)
 
 

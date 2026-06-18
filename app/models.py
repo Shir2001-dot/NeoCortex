@@ -44,6 +44,7 @@ class PatientRecord(BaseModel):
     lab_results: list[LabResult] = Field(default_factory=list)
     vitals: Optional[VitalSigns] = None
     referral_reason: Optional[str] = None
+    referral_date: Optional[str] = None
 
     source: str = Field(description="e.g. 'pdf', 'text', 'wearable'")
     raw_text: Optional[str] = None
