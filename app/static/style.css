@@ -540,7 +540,8 @@ input[type="file"]:hover { border-color: var(--primary); }
 .clinical-table tr:last-child { border-bottom: none; }
 
 .clinical-table td.ct-label {
-    width: 28%;
+    width: 35%;
+    min-width: 100px;
     padding: 0.5rem 0.85rem;
     color: var(--text-secondary);
     font-weight: 600;
@@ -556,6 +557,9 @@ input[type="file"]:hover { border-color: var(--primary); }
     padding: 0.5rem 0.85rem;
     color: var(--text);
     vertical-align: top;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    min-width: 0;
 }
 
 .section-title {
