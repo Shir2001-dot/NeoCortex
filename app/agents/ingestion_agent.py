@@ -16,6 +16,10 @@ You may only extract information that is explicitly stated in the source text. \
 Do NOT infer, assume, or add diagnoses, symptoms, or medical history based on medications or any other indirect reasoning. \
 If a field is not explicitly mentioned in the text, return null or an empty list — never guess. \
 \
+HEBREW RTL FORMAT: In Hebrew referral letters, fields often appear as "VALUE : LABEL" (value before label, right-to-left). \
+For example: "ישראל ישראלי : שם מלא" means full_name = "ישראל ישראלי". \
+Always extract the VALUE (the part before the colon when reading right-to-left, i.e. to the RIGHT of " : "). \
+\
 If the input text is in Hebrew, ALL extracted text fields MUST be written in Hebrew. \
 Translate terms that appear in English in the source into Hebrew where a standard Hebrew medical term exists. \
 \
