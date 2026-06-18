@@ -3,9 +3,12 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from fastapi import Cookie, Depends, FastAPI, Form, HTTPException, UploadFile
+from fastapi import Cookie, Depends, FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from app.auth import (
     create_token,
@@ -59,7 +62,10 @@ from app.storage import (
     upsert_master,
 )
 
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="NeoCortex AI", redirect_slashes=False)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
@@ -77,7 +83,8 @@ async def login_page() -> FileResponse:
 
 
 @app.post("/auth/login")
-async def do_login(body: dict):
+@limiter.limit("10/minute")
+async def do_login(request: Request, body: dict):
     id_number = body.get("id_number", "")
     password = body.get("password", "")
     with SessionLocal() as session:
@@ -267,7 +274,8 @@ def _user_tags(user: dict) -> dict:
 # ── Ingest routes ─────────────────────────────────────────────────────────────
 
 @app.post("/ingest/pdf", response_model=PatientTransaction)
-async def ingest_pdf(patient_id: str, file: UploadFile, user: dict = Depends(require_permission("edit_records"))) -> PatientTransaction:
+@limiter.limit("30/minute")
+async def ingest_pdf(request: Request, patient_id: str, file: UploadFile, user: dict = Depends(require_permission("edit_records"))) -> PatientTransaction:
     file_bytes = await file.read()
     raw_text = extract_text_from_pdf(file_bytes)
     record = extract_patient_data(patient_id, raw_text, source="pdf")
@@ -294,15 +302,16 @@ async def ingest_pdf_base64(request: IngestPdfRequest, user: dict = Depends(requ
 
 
 @app.post("/ingest/text", response_model=PatientTransaction)
-async def ingest_text(request: IngestTextRequest, user: dict = Depends(require_permission("edit_records"))) -> PatientTransaction:
-    record = extract_patient_data(request.patient_id, request.text, source="text")
+@limiter.limit("30/minute")
+async def ingest_text(request: Request, body: IngestTextRequest, user: dict = Depends(require_permission("edit_records"))) -> PatientTransaction:
+    record = extract_patient_data(body.patient_id, body.text, source="text")
     tags = _user_tags(user)
     save_record(record, **tags)
     upsert_master(record.patient_id, record.full_name, record.date_of_birth, record.gender)
-    tx = _build_transaction(record, request.text)
+    tx = _build_transaction(record, body.text)
     save_transaction(tx, clinic_id=tags["clinic_id"], doctor_id_number=tags["doctor_id_number"])
     log_action(user["id_number"], "ingest", user_name=user.get("full_name"),
-               clinic_id=tags["clinic_id"], patient_id=request.patient_id)
+               clinic_id=tags["clinic_id"], patient_id=body.patient_id)
     return tx
 
 
