@@ -25,8 +25,8 @@ def _is_clean_text(text: str) -> bool:
     # Count consecutive duplicate characters
     dupes = sum(1 for i in range(1, len(text)) if text[i] == text[i - 1] and text[i] not in " \n\t")
     ratio = dupes / len(text)
-    # If more than 20% of chars are duplicates, text is garbled → use OCR
-    return ratio < 0.2
+    # If more than 40% of chars are duplicates, text is garbled → use OCR
+    return ratio < 0.4
 
 
 def _extract_with_pdfplumber(file_bytes: bytes) -> str:
