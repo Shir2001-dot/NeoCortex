@@ -24,6 +24,7 @@ from app.agents.decision_agent import evaluate_patient
 from app.agents.delta_agent import compute_delta
 from app.agents.ingestion_agent import extract_patient_data
 from app.agents.interactions_agent import check_interactions
+from app.agents.validity_agent import check_medication_validity
 from app.agents.summary_agent import generate_session_summary
 from app.models import (
     CreateUserRequest,
@@ -571,6 +572,18 @@ async def run_interactions_by_internal_id(
     log_action(user["id_number"], "drug_interactions", user_name=user.get("full_name"),
                clinic_id=user.get("clinic_id"), patient_id=record.patient_id)
     return check_interactions(record.patient_id, record.medications)
+
+
+@app.post("/p/{internal_id}/medication-validity")
+async def check_validity_by_internal_id(
+    internal_id: str,
+    user: dict = Depends(require_permission("drug_interactions")),
+):
+    record = get_record_by_internal_id(internal_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    referral_date = record.created_at.strftime("%Y-%m-%d") if record.created_at else None
+    return check_medication_validity(record.patient_id, record.medications, referral_date)
 
 
 @app.patch("/p/{internal_id}/vitals", response_model=PatientRecord)

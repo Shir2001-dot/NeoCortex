@@ -3,6 +3,7 @@ const ingestBtn       = document.getElementById("ingest-btn");
 const decisionBtn     = document.getElementById("decision-btn");
 const vitalsBtn       = document.getElementById("vitals-btn");
 const interactionsBtn = document.getElementById("interactions-btn");
+const validityBtn     = document.getElementById("validity-btn");
 const printBtn        = document.getElementById("print-btn");
 const searchBtn       = document.getElementById("search-btn");
 const decisionCard        = document.getElementById("decision-card");
@@ -502,6 +503,46 @@ document.getElementById("summary-save-btn").addEventListener("click", async () =
         document.getElementById("save-summary-msg").className = "error";
     } finally {
         document.getElementById("summary-save-btn").disabled = false;
+    }
+});
+
+// ─── Medication Validity ───
+const VALIDITY_COLORS = { "פג תוקף": "critical", "לאימות": "warning", "לחידוש מרשם": "warning", "בתוקף": "info" };
+const VALIDITY_ICONS  = { "פג תוקף": "🔴", "לאימות": "🟡", "לחידוש מרשם": "🟡", "בתוקף": "🟢" };
+
+validityBtn?.addEventListener("click", async () => {
+    if (!currentPatientInternalId) return;
+    setStatus("validity", "בודק תוקף מרשמים...", "loading");
+    validityBtn.disabled = true;
+    document.getElementById("validity-content").innerHTML = "";
+    try {
+        const res = await fetch(`/p/${encodeURIComponent(currentPatientInternalId)}/medication-validity`, {
+            method: "POST", credentials: "include"
+        });
+        if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
+        const result = await res.json();
+        setStatus("validity", "", "");
+        const items = result.medications || [];
+        if (!items.length) {
+            document.getElementById("validity-content").innerHTML = "<p style='color:var(--success)'>✓ לא נמצאו תרופות לבדיקה</p>";
+            return;
+        }
+        document.getElementById("validity-content").innerHTML = items.map(item => `
+            <div class="flag ${esc(VALIDITY_COLORS[item.status] || 'info')}" style="margin-bottom:.6rem">
+                <div class="flag-dot"></div>
+                <div class="flag-body">
+                    <div style="font-weight:700;margin-bottom:.2rem">${VALIDITY_ICONS[item.status] || ''} ${esc(item.name)}</div>
+                    <div style="font-size:.8rem;color:var(--text-secondary);margin-bottom:.2rem">
+                        <span style="background:#f3f4f6;padding:.1rem .4rem;border-radius:3px;margin-left:.4rem">${esc(item.category)}</span>
+                        <span style="background:#f3f4f6;padding:.1rem .4rem;border-radius:3px">${esc(item.status)}</span>
+                    </div>
+                    <div class="flag-msg">${esc(item.message)}</div>
+                </div>
+            </div>`).join("");
+    } catch(e) {
+        setStatus("validity", networkErrMsg(e), "error");
+    } finally {
+        validityBtn.disabled = false;
     }
 });
 

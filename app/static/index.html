@@ -83,6 +83,10 @@
                 <span class="sidebar-icon">⚠️</span>
                 <span class="sidebar-label">אינטראקציות</span>
             </button>
+            <button class="sidebar-item sidebar-clinical hidden" data-view="validity" id="nav-validity">
+                <span class="sidebar-icon">💊</span>
+                <span class="sidebar-label">תוקף מרשמים</span>
+            </button>
             <button class="sidebar-item sidebar-clinical hidden" data-view="summary" id="nav-summary">
                 <span class="sidebar-icon">📝</span>
                 <span class="sidebar-label">סיכום פגישה</span>
@@ -219,6 +223,21 @@
             <div class="card" id="interactions-card">
                 <div class="card-body">
                     <div id="interactions-content"><p style="color:var(--muted);font-size:.88rem">לחץ "בדוק" כדי לבדוק אינטראקציות תרופתיות</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: VALIDITY -->
+        <div class="view hidden" id="view-validity">
+            <div class="view-header">
+                <h1 class="view-title">💊 תוקף מרשמים</h1>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <p style="font-size:.85rem;color:var(--text-secondary);margin-bottom:1rem">בדיקת רלוונטיות תרופות לפי תאריך ההפנייה והנחיות FDA</p>
+                    <button type="button" class="btn btn-primary" id="validity-btn">💊 בדוק תוקף מרשמים</button>
+                    <div id="validity-msg" style="margin-top:.75rem"></div>
+                    <div id="validity-content" style="margin-top:1rem"></div>
                 </div>
             </div>
         </div>
