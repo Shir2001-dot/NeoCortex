@@ -492,7 +492,7 @@ input[type="file"]:hover { border-color: var(--primary); }
 /* ─── PATIENT INFO GRID ─── */
 .info-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 0;
     margin-bottom: 0;
     border: 1px solid var(--border);
@@ -507,8 +507,6 @@ input[type="file"]:hover { border-color: var(--primary); }
     background: #fff;
 }
 
-.info-cell:nth-child(2n) { border-left: none; }
-.info-cell:nth-last-child(-n+2) { border-bottom: none; }
 .info-cell:nth-child(even) { background: #f9fafb; }
 
 .info-cell .lbl {
@@ -587,8 +585,9 @@ input[type="file"]:hover { border-color: var(--primary); }
     font-size: 0.8rem;
     font-weight: 500;
     border: 1px solid #d1d5db;
-    white-space: nowrap;
-    overflow-wrap: normal;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    max-width: 100%;
 }
 
 /* ─── VITALS EDIT ─── */
