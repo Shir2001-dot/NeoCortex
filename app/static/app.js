@@ -112,6 +112,43 @@ function tagList(items) {
     return `<div class="tag-list">${items.map(i=>`<span class="tag">${esc(i)}</span>`).join("")}</div>`;
 }
 
+function conditionList(items) {
+    if (!items?.length) return "<span style='color:var(--muted);font-size:.85rem'>אין נתונים</span>";
+    return `<div class="tag-list">${items.map((c, i) => {
+        const name = typeof c === 'string' ? c : c.name;
+        const active = typeof c === 'string' ? true : c.active;
+        const date = typeof c === 'object' && c.onset_date ? ` (${esc(c.onset_date)})` : "";
+        const style = active ? "" : "color:#9ca3af;text-decoration:line-through;opacity:.7";
+        return `<span class="tag" style="${style}" title="${active ? 'לחץ לסימון כהיסטורי' : 'לחץ לסימון כפעיל'}" data-condition-idx="${i}" onclick="toggleCondition(${i})">${esc(name)}${date}</span>`;
+    }).join("")}</div>`;
+}
+
+async function toggleCondition(idx) {
+    if (!currentRecord || !currentRecord.medical_history) return;
+    const cond = currentRecord.medical_history[idx];
+    if (!cond || typeof cond === 'string') return;
+    cond.active = !cond.active;
+    const conditionsUrl = currentPatientInternalId
+        ? `/p/${encodeURIComponent(currentPatientInternalId)}/conditions`
+        : `/patients/${encodeURIComponent(currentPatientId)}/conditions`;
+    try {
+        const res = await fetch(conditionsUrl, {
+            method: "PATCH",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({conditions: currentRecord.medical_history}),
+            credentials: "include",
+        });
+        if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
+        const updated = await res.json();
+        currentRecord = updated;
+        renderRecord(updated);
+    } catch (e) {
+        // Revert on error
+        cond.active = !cond.active;
+        console.error(e);
+    }
+}
+
 const TX_TYPE_LABELS = {
     referral: "הפניה",
     hospitalization: "אשפוז",
@@ -145,7 +182,7 @@ function renderRecord(r) {
         <table class="clinical-table" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:1rem">
             ${clinicalRow("תלונה עיקרית", esc(r.chief_complaint) || "—")}
             ${clinicalRow("תסמינים", tagList(r.symptoms))}
-            ${clinicalRow("היסטוריה רפואית", tagList(r.medical_history))}
+            ${clinicalRow("היסטוריה רפואית", conditionList(r.medical_history))}
             ${clinicalRow("תרופות", tagList(r.medications))}
             ${clinicalRow("אלרגיות", tagList(r.allergies))}
         </table>
@@ -176,11 +213,31 @@ function populateVitals(v) {
 
 
 // ─── Render decision ───
+function renderDelta(delta) {
+    if (!delta) return "";
+    const rows = [
+        ["תרופות חדשות", delta.new_medications],
+        ["תרופות שהופסקו", delta.removed_medications],
+        ["תסמינים חדשים", delta.new_symptoms],
+        ["תסמינים שנפתרו", delta.resolved_symptoms],
+        ["שינויים במדדים", delta.changed_vitals],
+    ].filter(([_, items]) => items?.length);
+    if (!rows.length) return "";
+    return `<div class="delta-box">${rows.map(([l,items])=>`<div><strong>${l}:</strong> ${items.map(esc).join(", ")}</div>`).join("")}</div>`;
+}
+
 function renderDecision(result) {
-    const flags = (result.flags || []).map(f => `
-        <div class="flag ${f.severity}">
+    const sortedFlags = (result.flags || []).slice().sort((a, b) => {
+        if (a.relevance === "urgent" && b.relevance !== "urgent") return -1;
+        if (a.relevance !== "urgent" && b.relevance === "urgent") return 1;
+        return 0;
+    });
+
+    const flags = sortedFlags.map(f => `
+        <div class="flag ${f.severity}${f.relevance === 'urgent' ? ' flag-urgent' : ''}">
             <div class="flag-dot"></div>
             <div class="flag-body">
+                ${f.relevance === 'urgent' ? '<span class="flag-relevance-badge">דחוף</span>' : ''}
                 <div class="flag-severity">${esc(f.severity)}</div>
                 <div class="flag-msg">${esc(f.message)}</div>
             </div>
@@ -193,6 +250,7 @@ function renderDecision(result) {
         .map(a => `<li>${esc(a)}</li>`).join("");
 
     decisionContent.innerHTML = `
+        ${renderDelta(result.visit_delta)}
         <div class="section-title">דגלים קליניים</div>
         ${flags || "<p style='color:var(--muted);font-size:.88rem'>אין דגלים</p>"}
         <div class="section-title" style="margin-top:1.25rem">אבחנה מבדלת</div>

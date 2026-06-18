@@ -276,12 +276,19 @@ def _parse(data) -> dict:
     return json.loads(data)
 
 
+def _migrate_record_dict(data: dict) -> dict:
+    mh = data.get("medical_history", [])
+    if mh and isinstance(mh[0], str):
+        data["medical_history"] = [{"name": s, "active": True, "onset_date": None} for s in mh]
+    return data
+
+
 def get_record(patient_id: str) -> PatientRecord | None:
     with SessionLocal() as session:
         row = session.get(PatientRecordRow, patient_id)
         if row is None:
             return None
-        return PatientRecord(**_parse(_decrypt(row.data)))
+        return PatientRecord(**_migrate_record_dict(_parse(_decrypt(row.data))))
 
 
 def get_record_by_internal_id(internal_id: str) -> PatientRecord | None:
@@ -291,7 +298,7 @@ def get_record_by_internal_id(internal_id: str) -> PatientRecord | None:
             try:
                 data = _parse(_decrypt(row.data))
                 if data.get("internal_id") == internal_id:
-                    return PatientRecord(**data)
+                    return PatientRecord(**_migrate_record_dict(data))
             except Exception:
                 continue
         return None
@@ -336,7 +343,7 @@ def get_transactions(patient_id: str) -> list[PatientTransaction]:
         rows = session.query(PatientTransactionRow).filter_by(patient_id=patient_id).order_by(PatientTransactionRow.date.desc()).all()
         result = []
         for row in rows:
-            extracted = PatientRecord(**_parse(_decrypt(row.extracted_json)))
+            extracted = PatientRecord(**_migrate_record_dict(_parse(_decrypt(row.extracted_json))))
             result.append(PatientTransaction(
                 transaction_id=row.transaction_id,
                 patient_id=row.patient_id,

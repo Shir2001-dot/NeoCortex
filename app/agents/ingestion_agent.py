@@ -36,7 +36,7 @@ use null where appropriate):
   "gender": string | null,
   "chief_complaint": string | null,
   "symptoms": string[],
-  "medical_history": string[],
+  "medical_history": [{"name": string, "active": true, "onset_date": string | null}],
   "medications": string[],
   "allergies": string[],
   "lab_results": [{"name": string, "value": string, "unit": string | null, \
@@ -80,6 +80,11 @@ def extract_patient_data(patient_id: str, raw_text: str, source: str) -> Patient
     if not response.content:
         raise ValueError(f"Claude returned empty response. stop_reason={response.stop_reason}")
     extracted = parse_json_response(response.content[0].text)
+
+    # Normalize medical_history to list of dicts
+    mh = extracted.get("medical_history", [])
+    if mh and isinstance(mh[0], str):
+        extracted["medical_history"] = [{"name": s, "active": True, "onset_date": None} for s in mh]
 
     # Use id_number from document as patient_id if available
     id_number = extracted.pop("id_number", None)

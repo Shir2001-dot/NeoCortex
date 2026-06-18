@@ -15,6 +15,12 @@ class VitalSigns(BaseModel):
     spo2_percent: Optional[float] = None
 
 
+class MedicalCondition(BaseModel):
+    name: str
+    active: bool = True
+    onset_date: Optional[str] = None
+
+
 class LabResult(BaseModel):
     name: str
     value: str
@@ -32,7 +38,7 @@ class PatientRecord(BaseModel):
 
     chief_complaint: Optional[str] = None
     symptoms: list[str] = Field(default_factory=list)
-    medical_history: list[str] = Field(default_factory=list)
+    medical_history: list[MedicalCondition] = Field(default_factory=list)
     medications: list[str] = Field(default_factory=list)
     allergies: list[str] = Field(default_factory=list)
     lab_results: list[LabResult] = Field(default_factory=list)
@@ -66,6 +72,15 @@ class VitalsUpdateRequest(BaseModel):
 class DecisionFlag(BaseModel):
     severity: str = Field(description="'info', 'warning', or 'critical'")
     message: str
+    relevance: str = "background"
+
+
+class VisitDelta(BaseModel):
+    new_medications: list[str] = []
+    removed_medications: list[str] = []
+    new_symptoms: list[str] = []
+    resolved_symptoms: list[str] = []
+    changed_vitals: list[str] = []
 
 
 class DecisionResult(BaseModel):
@@ -74,6 +89,7 @@ class DecisionResult(BaseModel):
     differential_diagnosis: list[str] = Field(default_factory=list)
     recommended_actions: list[str] = Field(default_factory=list)
     summary: Optional[str] = None
+    visit_delta: Optional[VisitDelta] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 

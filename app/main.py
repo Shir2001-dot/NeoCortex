@@ -21,6 +21,7 @@ from app.auth import (
 )
 
 from app.agents.decision_agent import evaluate_patient
+from app.agents.delta_agent import compute_delta
 from app.agents.ingestion_agent import extract_patient_data
 from app.agents.interactions_agent import check_interactions
 from app.agents.summary_agent import generate_session_summary
@@ -37,6 +38,7 @@ from app.models import (
     SessionSummaryRequest,
     SessionSummaryResult,
     UserInfo,
+    VisitDelta,
     VitalSigns,
     VitalsUpdateRequest,
 )
@@ -503,7 +505,10 @@ async def run_decision(patient_id: str, user: dict = Depends(require_permission(
     history = transactions[1:] if len(transactions) > 1 else []
     log_action(user["id_number"], "clinical_analysis", user_name=user.get("full_name"),
                clinic_id=user.get("clinic_id"), patient_id=patient_id)
-    return evaluate_patient(record, history=history)
+    result = evaluate_patient(record, history=history)
+    if len(transactions) >= 2:
+        result.visit_delta = compute_delta(record, transactions[1].extracted)
+    return result
 
 
 @app.post("/patients/{patient_id}/interactions", response_model=InteractionsResult)
@@ -549,7 +554,10 @@ async def run_decision_by_internal_id(internal_id: str, user: dict = Depends(req
     history = transactions[1:] if len(transactions) > 1 else []
     log_action(user["id_number"], "clinical_analysis", user_name=user.get("full_name"),
                clinic_id=user.get("clinic_id"), patient_id=record.patient_id)
-    return evaluate_patient(record, history=history)
+    result = evaluate_patient(record, history=history)
+    if len(transactions) >= 2:
+        result.visit_delta = compute_delta(record, transactions[1].extracted)
+    return result
 
 
 @app.post("/p/{internal_id}/interactions", response_model=InteractionsResult)
@@ -573,6 +581,34 @@ async def update_vitals_by_internal_id(internal_id: str, vitals: VitalsUpdateReq
     current = record.vitals or VitalSigns()
     updated = current.model_copy(update={k: v for k, v in vitals.model_dump().items() if v is not None})
     record.vitals = updated
+    save_record(record)
+    return record
+
+
+@app.patch("/patients/{patient_id}/conditions", response_model=PatientRecord)
+async def update_conditions(patient_id: str, body: dict, user: dict = Depends(require_permission("edit_records"))) -> PatientRecord:
+    record = get_record(patient_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    from app.models import MedicalCondition
+    conditions = body.get("conditions", [])
+    record = record.model_copy(update={"medical_history": [
+        MedicalCondition(**c) if isinstance(c, dict) else c for c in conditions
+    ]})
+    save_record(record)
+    return record
+
+
+@app.patch("/p/{internal_id}/conditions", response_model=PatientRecord)
+async def update_conditions_by_internal_id(internal_id: str, body: dict, user: dict = Depends(require_permission("edit_records"))) -> PatientRecord:
+    record = get_record_by_internal_id(internal_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    from app.models import MedicalCondition
+    conditions = body.get("conditions", [])
+    record = record.model_copy(update={"medical_history": [
+        MedicalCondition(**c) if isinstance(c, dict) else c for c in conditions
+    ]})
     save_record(record)
     return record
 

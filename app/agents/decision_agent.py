@@ -28,11 +28,12 @@ prefixed with "הערה פרמקולוגית:" and marked as general reference �
 Drug interactions are a separate flag with severity "critical" or "warning".
 6. Every output item must be traceable to a documented fact or a named evidence source. \
 If you cannot cite a source or documented fact, do not include the item.
+7. For each flag, set "relevance" to "urgent" if the clinician must act before the patient leaves (dangerous drug interaction, critical vital sign, alarming lab value requiring immediate intervention). Set "relevance" to "background" for context-only information.
 
 Respond with ONLY a JSON object matching this shape:
 
 {
-  "flags": [{"severity": "info" | "warning" | "critical", "message": string}],
+  "flags": [{"severity": "info" | "warning" | "critical", "message": string, "relevance": "urgent" | "background"}],
   "differential_diagnosis": string[],
   "recommended_actions": string[],
   "summary": string
@@ -52,7 +53,7 @@ def _format_history(history: list) -> str:
         r = tx.extracted
         line = f"[{tx.date}] ({tx.transaction_type}) - תלונה עיקרית: {r.chief_complaint or '—'}"
         if r.medical_history:
-            line += f" | היסטוריה: {', '.join(r.medical_history[:3])}"
+            line += f" | היסטוריה: {', '.join(c.name if hasattr(c, 'name') else c for c in r.medical_history[:3])}"
         lines.append(line)
     lines.append("=================================")
     return "\n".join(lines)
