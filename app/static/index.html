@@ -116,14 +116,16 @@
         <div class="view active" id="view-search">
             <div class="view-header">
                 <h1 class="view-title">חיפוש מטופל</h1>
+                <button class="btn btn-outline" id="export-excel-btn" style="font-size:.82rem">📊 ייצוא Excel</button>
             </div>
             <div class="card">
                 <div class="card-body">
-                    <div style="display:flex;gap:.5rem">
-                        <input type="text" id="search-input" placeholder="חיפוש לפי שם או ת.ז..." style="flex:1" />
+                    <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
+                        <input type="text" id="search-input" placeholder="חיפוש לפי שם, תרופה, אבחנה, תסמין..." style="flex:1" />
                         <button class="btn btn-primary" id="search-btn">חיפוש</button>
                     </div>
-                    <div id="search-results" style="margin-top:.75rem"></div>
+                    <div style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem">חיפוש חכם: שם מטופל · תרופה · אבחנה · תסמין</div>
+                    <div id="search-results" style="margin-top:.5rem"></div>
                 </div>
             </div>
         </div>

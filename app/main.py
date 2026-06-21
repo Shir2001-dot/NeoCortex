@@ -51,6 +51,7 @@ from app.storage import (
     create_reset_token,
     create_user,
     delete_user,
+    get_all_records_for_export,
     get_audit_log,
     get_clinic,
     get_master,
@@ -66,6 +67,7 @@ from app.storage import (
     log_action,
     save_record,
     save_transaction,
+    search_patients_by_clinic,
     seed_demo_data,
     update_user_email,
     update_user_password,
@@ -438,6 +440,85 @@ async def ingest_text(request: Request, body: IngestTextRequest, user: dict = De
 
 
 # ── Patient routes ────────────────────────────────────────────────────────────
+
+@app.get("/patients/search")
+async def search_patients(q: str, user: dict = Depends(require_permission("view_records"))) -> list[dict]:
+    clinic_id = user.get("clinic_id")
+    if not clinic_id or not q.strip():
+        return []
+    with SessionLocal() as session:
+        results = search_patients_by_clinic(session, clinic_id, q)
+    log_action(user["id_number"], "search_patients", user_name=user.get("full_name"),
+               clinic_id=clinic_id, detail=q)
+    return results
+
+
+@app.get("/patients/export/excel")
+async def export_patients_excel(user: dict = Depends(require_permission("view_records"))):
+    import io
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+    clinic_id = user.get("clinic_id")
+    if not clinic_id:
+        raise HTTPException(status_code=400, detail="אין מרפאה מוגדרת")
+    with SessionLocal() as session:
+        records = get_all_records_for_export(session, clinic_id)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "מטופלים"
+    ws.sheet_view.rightToLeft = True
+
+    headers = ["שם מלא", "ת.ז", "תאריך לידה", "מגדר", "תלונה עיקרית",
+               "תרופות", "אלרגיות", "היסטוריה רפואית", "תסמינים"]
+    header_fill = PatternFill("solid", fgColor="1A56DB")
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+
+    for col, h in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=h)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="right")
+
+    for row_idx, rec in enumerate(records, 2):
+        meds = ", ".join(rec.get("medications") or [])
+        allergies = ", ".join(rec.get("allergies") or [])
+        history = rec.get("medical_history") or []
+        history_str = ", ".join(
+            (c.get("name") if isinstance(c, dict) else str(c)) for c in history
+        )
+        symptoms = ", ".join(rec.get("symptoms") or [])
+        row_data = [
+            rec.get("full_name", ""),
+            rec.get("patient_id", ""),
+            rec.get("date_of_birth", ""),
+            rec.get("gender", ""),
+            rec.get("chief_complaint", ""),
+            meds, allergies, history_str, symptoms,
+        ]
+        for col, val in enumerate(row_data, 1):
+            cell = ws.cell(row=row_idx, column=col, value=val or "")
+            cell.alignment = Alignment(horizontal="right")
+        if row_idx % 2 == 0:
+            for col in range(1, len(headers) + 1):
+                ws.cell(row=row_idx, column=col).fill = PatternFill("solid", fgColor="F0F4FF")
+
+    for col in ws.columns:
+        max_len = max((len(str(c.value or "")) for c in col), default=10)
+        ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 40)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    log_action(user["id_number"], "export_excel", user_name=user.get("full_name"), clinic_id=clinic_id)
+    from datetime import date
+    filename = f"neocortex_patients_{date.today()}.xlsx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 
 @app.get("/patients")
 async def get_patients(user: dict = Depends(get_current_user)) -> list[dict]:

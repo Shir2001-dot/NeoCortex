@@ -553,55 +553,60 @@ printBtn.addEventListener("click", () => {
 });
 
 // ─── Patient Search ───
-searchBtn.addEventListener("click", async () => {
-    const query = document.getElementById("search-input").value.trim().toLowerCase();
-    const resultsEl = document.getElementById("search-results");
-    if (!query) { resultsEl.innerHTML = ""; return; }
-
-    try {
-        const res = await fetch("/patients", { credentials: "include" });
-        if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
-        const patients = await res.json();
-        const filtered = patients.filter(p =>
-            (p.full_name || "").toLowerCase().includes(query) ||
-            (p.patient_id || "").toLowerCase().includes(query)
-        );
-
-        if (filtered.length === 0) {
-            resultsEl.innerHTML = `<div class="search-results"><div class="search-empty">לא נמצאו מטופלים</div></div>`;
-            return;
-        }
-
-        resultsEl.innerHTML = `<div class="search-results">${filtered.map(p => `
-            <div class="search-item" data-id="${esc(p.patient_id)}">
+function renderSearchResults(patients, resultsEl) {
+    if (!patients.length) {
+        resultsEl.innerHTML = `<div class="search-results"><div class="search-empty">לא נמצאו מטופלים</div></div>`;
+        return;
+    }
+    resultsEl.innerHTML = `<div class="search-results">${patients.map(p => {
+        const meds = (p.medications || []).slice(0, 3).join(", ");
+        const history = (p.medical_history || []).slice(0, 2).map(c => c.name || c).join(", ");
+        return `<div class="search-item" data-id="${esc(p.patient_id)}" data-internal="${esc(p.internal_id||'')}">
+            <div style="display:flex;justify-content:space-between;align-items:center">
                 <span class="search-item-name">${esc(p.full_name || "ללא שם")}</span>
                 <span class="search-item-id">${esc(p.patient_id)}</span>
             </div>
-        `).join("")}</div>`;
+            ${meds ? `<div style="font-size:.74rem;color:var(--muted);margin-top:.2rem">💊 ${esc(meds)}</div>` : ""}
+            ${history ? `<div style="font-size:.74rem;color:var(--muted)">🏥 ${esc(history)}</div>` : ""}
+        </div>`;
+    }).join("")}</div>`;
 
-        resultsEl.querySelectorAll(".search-item").forEach(item => {
-            item.addEventListener("click", async () => {
-                const pid = item.dataset.id;
-                try {
-                    const recRes = await fetch(`/patients/${encodeURIComponent(pid)}`, { credentials: "include" });
-                    if (!recRes.ok) throw new Error("מטופל לא נמצא");
-                    const record = await recRes.json();
-                    currentPatientId = pid;
-                    currentPatientInternalId = record.internal_id || null;
-                    currentRecord = record;
-                    const titleEl = document.getElementById("record-card-title");
-                    if (titleEl) titleEl.textContent = `תיק מטופל · ${record.full_name || pid}`;
-                    renderRecord(record);
-                    unlockClinicalNav(pid);
-                    updateSidebarPatient(record.full_name, pid);
-                    showView("record");
-                    resultsEl.innerHTML = "";
-                    document.getElementById("search-input").value = "";
-                } catch(e) {
-                    resultsEl.innerHTML = `<div class="search-results"><div class="search-empty">${esc(e.message)}</div></div>`;
-                }
-            });
+    resultsEl.querySelectorAll(".search-item").forEach(item => {
+        item.addEventListener("click", async () => {
+            const pid = item.dataset.id;
+            try {
+                const recRes = await fetch(`/patients/${encodeURIComponent(pid)}`, { credentials: "include" });
+                if (!recRes.ok) throw new Error("מטופל לא נמצא");
+                const record = await recRes.json();
+                currentPatientId = pid;
+                currentPatientInternalId = record.internal_id || null;
+                currentRecord = record;
+                const titleEl = document.getElementById("record-card-title");
+                if (titleEl) titleEl.textContent = `תיק מטופל · ${record.full_name || pid}`;
+                renderRecord(record);
+                unlockClinicalNav(pid);
+                updateSidebarPatient(record.full_name, pid);
+                showView("record");
+                resultsEl.innerHTML = "";
+                document.getElementById("search-input").value = "";
+            } catch(e) {
+                resultsEl.innerHTML = `<div class="search-results"><div class="search-empty">${esc(e.message)}</div></div>`;
+            }
         });
+    });
+}
+
+searchBtn.addEventListener("click", async () => {
+    const query = document.getElementById("search-input").value.trim();
+    const resultsEl = document.getElementById("search-results");
+    if (!query) { resultsEl.innerHTML = ""; return; }
+
+    resultsEl.innerHTML = `<div style="color:var(--muted);font-size:.85rem;padding:.5rem">מחפש...</div>`;
+    try {
+        const res = await fetch(`/patients/search?q=${encodeURIComponent(query)}`, { credentials: "include" });
+        if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
+        const patients = await res.json();
+        renderSearchResults(patients, resultsEl);
     } catch(e) {
         resultsEl.innerHTML = `<div class="search-results"><div class="search-empty">${esc(e.message)}</div></div>`;
     }
@@ -610,6 +615,31 @@ searchBtn.addEventListener("click", async () => {
 document.getElementById("search-input").addEventListener("keydown", e => {
     if (e.key === "Enter") searchBtn.click();
 });
+
+// ─── Excel Export ───
+const exportExcelBtn = document.getElementById("export-excel-btn");
+if (exportExcelBtn) {
+    exportExcelBtn.addEventListener("click", async () => {
+        exportExcelBtn.disabled = true;
+        exportExcelBtn.textContent = "⏳ מייצא...";
+        try {
+            const res = await fetch("/patients/export/excel", { credentials: "include" });
+            if (!res.ok) throw new Error(`שגיאה (${res.status})`);
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `neocortex_patients_${new Date().toISOString().slice(0,10)}.xlsx`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch(e) {
+            alert("שגיאה בייצוא: " + e.message);
+        } finally {
+            exportExcelBtn.disabled = false;
+            exportExcelBtn.textContent = "📊 ייצוא Excel";
+        }
+    });
+}
 
 // ─── Drug Interactions ───
 interactionsBtn.addEventListener("click", async () => {

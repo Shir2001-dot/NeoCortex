@@ -311,6 +311,56 @@ def get_patients_by_clinic(session, clinic_id: str) -> list:
             .all())
 
 
+def search_patients_by_clinic(session, clinic_id: str, query: str) -> list[dict]:
+    """Search patients by name, medication, or diagnosis. Returns decrypted matching records."""
+    rows = get_patients_by_clinic(session, clinic_id)
+    q = query.strip().lower()
+    results = []
+    for row in rows:
+        try:
+            data = json.loads(_decrypt(row.data) if row.data else "{}")
+        except Exception:
+            continue
+        # Search in name
+        name = (data.get("full_name") or "").lower()
+        # Search in medications
+        meds = " ".join(data.get("medications") or []).lower()
+        # Search in medical_history (conditions)
+        history = data.get("medical_history") or []
+        conditions = " ".join(
+            (c.get("name") if isinstance(c, dict) else str(c)) for c in history
+        ).lower()
+        # Search in chief_complaint and symptoms
+        complaint = (data.get("chief_complaint") or "").lower()
+        symptoms = " ".join(data.get("symptoms") or []).lower()
+
+        if q in name or q in meds or q in conditions or q in complaint or q in symptoms:
+            results.append({
+                "patient_id": data.get("patient_id", row.patient_id),
+                "internal_id": data.get("internal_id"),
+                "full_name": data.get("full_name"),
+                "date_of_birth": data.get("date_of_birth"),
+                "gender": data.get("gender"),
+                "medications": data.get("medications", []),
+                "medical_history": history,
+                "chief_complaint": data.get("chief_complaint"),
+            })
+    return results
+
+
+def get_all_records_for_export(session, clinic_id: str) -> list[dict]:
+    """Return all decrypted patient records for Excel export."""
+    rows = get_patients_by_clinic(session, clinic_id)
+    results = []
+    for row in rows:
+        try:
+            data = json.loads(_decrypt(row.data) if row.data else "{}")
+            results.append(data)
+        except Exception:
+            continue
+    return results
+
+
 def save_record(record: PatientRecord, clinic_id: str | None = None,
                 doctor_id_number: str | None = None, specialty: str | None = None) -> None:
     with SessionLocal() as session:
