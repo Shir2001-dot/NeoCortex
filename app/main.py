@@ -1,14 +1,17 @@
 import io
+import os
 import uuid
 from datetime import datetime
 from typing import Optional
 
+from authlib.integrations.starlette_client import OAuth
 from fastapi import Cookie, Depends, FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.auth import (
     create_token,
@@ -78,7 +81,20 @@ limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="NeoCortex AI", redirect_slashes=False)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SessionMiddleware, secret_key=os.environ.get("SESSION_SECRET", "dev-session-secret-change-in-prod"))
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+# ── Auth0 OAuth ───────────────────────────────────────────────────────────────
+_auth0_domain = os.environ.get("AUTH0_DOMAIN", "")
+oauth = OAuth()
+if _auth0_domain:
+    oauth.register(
+        name="auth0",
+        client_id=os.environ.get("AUTH0_CLIENT_ID"),
+        client_secret=os.environ.get("AUTH0_CLIENT_SECRET"),
+        server_metadata_url=f"https://{_auth0_domain}/.well-known/openid-configuration",
+        client_kwargs={"scope": "openid email profile"},
+    )
 
 
 @app.on_event("startup")
@@ -278,6 +294,66 @@ async def index(neocortex_token: Optional[str] = Cookie(default=None)) -> FileRe
     if not neocortex_token:
         return RedirectResponse("/login")
     return FileResponse("app/static/index.html")
+
+
+@app.get("/auth/auth0/login")
+async def auth0_login(request: Request):
+    if not _auth0_domain:
+        raise HTTPException(status_code=503, detail="Auth0 not configured")
+    callback_url = os.environ.get("AUTH0_CALLBACK_URL", "https://neocortex-api.onrender.com/auth/auth0/callback")
+    return await oauth.auth0.authorize_redirect(request, callback_url)
+
+
+@app.get("/auth/auth0/callback")
+async def auth0_callback(request: Request):
+    if not _auth0_domain:
+        raise HTTPException(status_code=503, detail="Auth0 not configured")
+    try:
+        token = await oauth.auth0.authorize_access_token(request)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Auth0 error: {e}")
+
+    userinfo = token.get("userinfo") or {}
+    email = (userinfo.get("email") or "").lower().strip()
+    if not email:
+        raise HTTPException(status_code=400, detail="לא נמצא אימייל בחשבון Auth0")
+
+    with SessionLocal() as session:
+        user = get_user_by_email(session, email)
+        if not user:
+            return RedirectResponse("/login?error=auth0_no_user")
+        import json as _json
+        perms = _json.loads(user.permissions) if user.permissions else []
+        token_data = {
+            "id_number": user.id_number,
+            "full_name": user.full_name,
+            "role": user.role,
+            "clinic_id": user.clinic_id,
+            "specialty": user.specialty,
+            "permissions": perms,
+        }
+        jwt_token = create_token(token_data)
+        log_action(user.id_number, "login_auth0", user_name=user.full_name, clinic_id=user.clinic_id)
+
+    redirect_to = "/" if user.role != "admin" else "/admin"
+    response = RedirectResponse(redirect_to)
+    response.set_cookie("neocortex_token", jwt_token, httponly=True, samesite="lax", max_age=28800)
+    return response
+
+
+@app.get("/auth/auth0/logout")
+async def auth0_logout(request: Request):
+    response = RedirectResponse("/login")
+    response.delete_cookie("neocortex_token")
+    if _auth0_domain:
+        base_url = os.environ.get("BASE_URL", "https://neocortex-api.onrender.com")
+        logout_url = (
+            f"https://{_auth0_domain}/v2/logout"
+            f"?client_id={os.environ.get('AUTH0_CLIENT_ID')}"
+            f"&returnTo={base_url}/login"
+        )
+        return RedirectResponse(logout_url)
+    return response
 
 
 @app.get("/forgot-password")
