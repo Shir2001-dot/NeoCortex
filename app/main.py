@@ -50,6 +50,7 @@ from app.models import (
 from app.pdf_utils import extract_text_from_pdf
 from app.storage import (
     SessionLocal,
+    UserRow,
     consume_reset_token,
     create_reset_token,
     create_user,
@@ -364,6 +365,33 @@ async def forgot_password_page() -> FileResponse:
 @app.get("/reset-password")
 async def reset_password_page() -> FileResponse:
     return FileResponse("app/static/reset-password.html")
+
+
+@app.get("/setup-admin")
+async def setup_admin(secret: str = ""):
+    if secret != os.environ.get("SETUP_SECRET", ""):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    with SessionLocal() as session:
+        existing = session.query(UserRow).filter(UserRow.id_number == "999999999").first()
+        if existing:
+            existing.email = "ferrerashirel@gmail.com"
+            existing.role = "admin"
+            existing.name = "עברי שמעון"
+            existing.specialty = "רפואת משפחה"
+            session.commit()
+            return {"status": "updated", "user": "עברי שמעון"}
+        user = UserRow(
+            id_number="999999999",
+            password_hash=hash_password("NeoCortex2026!"),
+            role="admin",
+            name="עברי שמעון",
+            specialty="רפואת משפחה",
+            clinic_id="default",
+            email="ferrerashirel@gmail.com",
+        )
+        session.add(user)
+        session.commit()
+    return {"status": "created", "user": "עברי שמעון", "id": "999999999", "password": "NeoCortex2026!"}
 
 
 @app.get("/admin")
