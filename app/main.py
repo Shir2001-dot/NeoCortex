@@ -30,15 +30,20 @@ from app.agents.ingestion_agent import extract_patient_data
 from app.agents.interactions_agent import check_interactions
 from app.agents.validity_agent import check_medication_validity
 from app.agents.summary_agent import generate_session_summary
+from app.agents.docgen_agent import generate_document
 from app.models import (
+    AddReminderRequest,
     CreateUserRequest,
     DecisionResult,
+    DocGenRequest,
+    DocGenResult,
     IngestPdfRequest,
     IngestTextRequest,
     InteractionsResult,
     PatientMaster,
     PatientRecord,
     PatientTransaction,
+    ReminderItem,
     SaveSummaryRequest,
     SessionSummaryRequest,
     SessionSummaryResult,
@@ -69,6 +74,11 @@ from app.storage import (
     get_users_by_clinic,
     list_patients,
     log_action,
+    add_reminder,
+    delete_reminder,
+    get_all_reminders_by_clinic,
+    get_reminders,
+    get_reminders_by_internal_id,
     save_record,
     save_transaction,
     search_patients_by_clinic,
@@ -578,9 +588,9 @@ async def search_patients(q: str, user: dict = Depends(require_permission("view_
     clinic_id = user.get("clinic_id")
     if not clinic_id or not q.strip():
         return []
-    # Admins and secretaries see all patients; clinical staff see only their own
+    # Admins, secretaries and nurses see all patients; doctors and interns see only their own
     role = user.get("role")
-    doctor_filter = user.get("id_number") if role in ("doctor", "intern", "nurse") else None
+    doctor_filter = user.get("id_number") if role in ("doctor", "intern") else None
     with SessionLocal() as session:
         results = search_patients_by_clinic(session, clinic_id, q, doctor_id_number=doctor_filter)
     log_action(user["id_number"], "search_patients", user_name=user.get("full_name"),
@@ -667,7 +677,7 @@ async def get_patients(user: dict = Depends(get_current_user)) -> list[dict]:
         ]
     with SessionLocal() as session:
         role = user.get("role")
-        doctor_filter = user.get("id_number") if role in ("doctor", "intern", "nurse") else None
+        doctor_filter = user.get("id_number") if role in ("doctor", "intern") else None
         rows = get_patients_by_clinic(session, clinic_id, doctor_id_number=doctor_filter)
         import json
         result = []
@@ -1023,3 +1033,57 @@ async def save_summary_by_internal_id(internal_id: str, request: SaveSummaryRequ
     )
     save_transaction(tx)
     return tx
+
+
+# ─── Document Generation ───
+
+@app.post("/p/{internal_id}/generate-doc", response_model=DocGenResult)
+async def gen_doc_by_internal(internal_id: str, request: DocGenRequest, user: dict = Depends(require_permission("session_summary"))) -> DocGenResult:
+    record = get_record_by_internal_id(internal_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    log_action(user["id_number"], "generate_doc", user_name=user.get("full_name"),
+               clinic_id=user.get("clinic_id"), patient_id=record.patient_id,
+               detail=request.doc_type)
+    doc = generate_document(request.doc_type, record.full_name or internal_id, request.details)
+    return DocGenResult(document=doc)
+
+
+@app.post("/patients/{patient_id}/generate-doc", response_model=DocGenResult)
+async def gen_doc(patient_id: str, request: DocGenRequest, user: dict = Depends(require_permission("session_summary"))) -> DocGenResult:
+    record = get_record(patient_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    doc = generate_document(request.doc_type, record.full_name or patient_id, request.details)
+    return DocGenResult(document=doc)
+
+
+# ─── Reminders ───
+
+@app.get("/p/{internal_id}/reminders")
+async def get_reminders_endpoint(internal_id: str, user: dict = Depends(get_current_user)) -> list[ReminderItem]:
+    _, reminders = get_reminders_by_internal_id(internal_id)
+    return reminders
+
+
+@app.post("/p/{internal_id}/reminders")
+async def add_reminder_endpoint(internal_id: str, request: AddReminderRequest, user: dict = Depends(get_current_user)) -> list[ReminderItem]:
+    patient_id, _ = get_reminders_by_internal_id(internal_id)
+    if not patient_id:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    item = ReminderItem(date=request.date, note=request.note, created_by=user.get("full_name"))
+    return add_reminder(patient_id, item)
+
+
+@app.delete("/p/{internal_id}/reminders/{reminder_id}")
+async def delete_reminder_endpoint(internal_id: str, reminder_id: str, user: dict = Depends(get_current_user)) -> list[ReminderItem]:
+    patient_id, _ = get_reminders_by_internal_id(internal_id)
+    if not patient_id:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    return delete_reminder(patient_id, reminder_id)
+
+
+@app.get("/clinic/reminders")
+async def clinic_reminders(user: dict = Depends(get_current_user)) -> list[dict]:
+    clinic_id = user.get("clinic_id", "default")
+    return get_all_reminders_by_clinic(clinic_id)

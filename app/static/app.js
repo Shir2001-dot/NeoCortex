@@ -244,6 +244,14 @@ function renderDecision(result) {
     const actionItems = (result.recommended_actions || [])
         .map(a => `<li>${esc(a)}</li>`).join("");
 
+    const icdCodes = result.icd_codes || [];
+    const icdHtml = icdCodes.length
+        ? `<div class="section-title" style="margin-top:1.25rem">קודי ICD-10</div>
+           <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.4rem">${icdCodes.map(c =>
+               `<span style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:6px;padding:.15rem .55rem;font-size:.8rem;font-family:monospace;font-weight:600">${esc(c)}</span>`
+           ).join("")}</div>`
+        : "";
+
     decisionContent.innerHTML = `
         ${renderDelta(result.visit_delta)}
         <div class="section-title">דגלים קליניים</div>
@@ -254,6 +262,7 @@ function renderDecision(result) {
         <ul class="action-list">${actionItems}</ul>
         <div class="section-title" style="margin-top:1.25rem">סיכום קליני</div>
         <div class="summary-box">${esc(result.summary)}</div>
+        ${icdHtml}
     `;
 }
 
@@ -1073,3 +1082,248 @@ document.getElementById("cp-submit-btn")?.addEventListener("click", async () => 
         cpMsgEl.textContent = "שגיאת רשת, נסה שוב";
     }
 });
+
+// ─── Document Generation ───
+const DOC_TYPE_LABELS = {
+    sick_note: "אישור מחלה",
+    referral: "מכתב הפניה",
+    prescription: "מרשם",
+    fitness: "תעודת כשירות",
+};
+const DOC_FIELDS = {
+    sick_note: [
+        { id: "df_from", label: "מתאריך", type: "date" },
+        { id: "df_to",   label: "עד תאריך", type: "date" },
+        { id: "df_dest", label: "מיועד ל (עבודה / לימודים)", type: "text", placeholder: "עבודה" },
+    ],
+    referral: [
+        { id: "df_specialist", label: "הפניה אל (מומחה / מחלקה)", type: "text", placeholder: "קרדיולוג" },
+        { id: "df_urgency",    label: "דחיפות", type: "text", placeholder: "רגיל / דחוף" },
+        { id: "df_reason",     label: "סיבת ההפניה (אפשרות לשנות)", type: "text" },
+    ],
+    prescription: [
+        { id: "df_drug",  label: "שם התרופה", type: "text", placeholder: "Metformin" },
+        { id: "df_dose",  label: "מינון", type: "text", placeholder: "500mg" },
+        { id: "df_freq",  label: "תדירות", type: "text", placeholder: "פעמיים ביום" },
+        { id: "df_days",  label: "משך טיפול", type: "text", placeholder: "30 יום" },
+    ],
+    fitness: [
+        { id: "df_purpose", label: "מטרת הכשירות", type: "text", placeholder: "ספורט / נהיגה / עבודה" },
+        { id: "df_result",  label: "מסקנה", type: "text", placeholder: "כשיר" },
+        { id: "df_valid",   label: "תוקף (חודשים)", type: "text", placeholder: "12" },
+    ],
+};
+
+let currentDocType = null;
+
+document.querySelectorAll(".doc-type-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        currentDocType = btn.dataset.type;
+        const formArea = document.getElementById("doc-form-area");
+        const fieldsEl = document.getElementById("doc-form-fields");
+        document.querySelectorAll(".doc-type-btn").forEach(b => b.classList.remove("btn-primary"));
+        btn.classList.add("btn-primary");
+        const fields = DOC_FIELDS[currentDocType] || [];
+        fieldsEl.innerHTML = fields.map(f => `
+            <div>
+                <label style="font-size:.78rem;font-weight:700;color:var(--text-secondary);display:block;margin-bottom:.2rem">${f.label}</label>
+                <input id="${f.id}" type="${f.type}" placeholder="${f.placeholder || ''}" style="width:100%" />
+            </div>
+        `).join("");
+        formArea.classList.remove("hidden");
+        document.getElementById("doc-result-card").classList.add("hidden");
+        setStatus("docs", "", "");
+        // Auto-fill referral reason from patient record
+        if (currentDocType === "referral" && currentRecord?.chief_complaint) {
+            const el = document.getElementById("df_reason");
+            if (el) el.value = currentRecord.chief_complaint;
+        }
+    });
+});
+
+document.getElementById("doc-generate-btn")?.addEventListener("click", async () => {
+    if (!currentDocType || !currentPatientInternalId) {
+        setStatus("docs", "יש לטעון מטופל תחילה", "error"); return;
+    }
+    const fields = DOC_FIELDS[currentDocType] || [];
+    const details = {};
+    const labelMap = {
+        sick_note: { df_from: "מתאריך", df_to: "עד תאריך", df_dest: "מיועד ל" },
+        referral:  { df_specialist: "הפניה אל", df_urgency: "דחיפות", df_reason: "סיבת הפניה" },
+        prescription: { df_drug: "תרופה", df_dose: "מינון", df_freq: "תדירות", df_days: "משך טיפול" },
+        fitness: { df_purpose: "מטרה", df_result: "מסקנה", df_valid: "תוקף" },
+    };
+    fields.forEach(f => {
+        const val = document.getElementById(f.id)?.value?.trim();
+        if (val) details[labelMap[currentDocType]?.[f.id] || f.id] = val;
+    });
+    // Add patient context
+    if (currentRecord?.date_of_birth) details["תאריך לידה"] = currentRecord.date_of_birth;
+    if (currentRecord?.patient_id) details["ת.ז"] = currentRecord.patient_id;
+
+    setStatus("docs", `מייצר ${DOC_TYPE_LABELS[currentDocType]}...`, "loading");
+    document.getElementById("doc-generate-btn").disabled = true;
+    try {
+        const res = await fetch(`/p/${encodeURIComponent(currentPatientInternalId)}/generate-doc`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ doc_type: currentDocType, details }),
+            credentials: "include",
+        });
+        if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
+        const data = await res.json();
+        document.getElementById("doc-result-text").textContent = data.document;
+        document.getElementById("doc-result-card").classList.remove("hidden");
+        setStatus("docs", "", "");
+        document.getElementById("doc-result-card").scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch(e) {
+        setStatus("docs", e.message, "error");
+    } finally {
+        document.getElementById("doc-generate-btn").disabled = false;
+    }
+});
+
+document.getElementById("doc-copy-btn")?.addEventListener("click", () => {
+    const text = document.getElementById("doc-result-text").textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById("doc-copy-btn");
+        btn.textContent = "✓ הועתק";
+        setTimeout(() => { btn.textContent = "📋 העתק"; }, 2000);
+    });
+});
+
+document.getElementById("doc-print-btn")?.addEventListener("click", () => {
+    const text = document.getElementById("doc-result-text").textContent;
+    const sig = document.getElementById("doc-doctor-sig")?.value || "";
+    const label = DOC_TYPE_LABELS[currentDocType] || "מסמך רפואי";
+    const patientName = currentRecord?.full_name || "";
+    const date = new Date().toLocaleDateString("he-IL");
+    const w = window.open("", "_blank");
+    w.document.write(`<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8">
+<title>${label}</title>
+<style>body{font-family:Arial,sans-serif;font-size:13px;padding:32px;direction:rtl;color:#111}
+h1{font-size:18px;margin-bottom:4px}.meta{color:#666;font-size:11px;margin-bottom:20px;border-bottom:1px solid #e5e7eb;padding-bottom:8px}
+pre{white-space:pre-wrap;font-family:Arial,sans-serif;font-size:13px;line-height:1.6}
+.footer{margin-top:32px;border-top:1px solid #e5e7eb;padding-top:12px;font-size:12px}
+.disclaimer{font-size:10px;color:#9ca3af;margin-top:12px}
+@media print{button{display:none}}</style></head><body>
+<h1>${label}</h1>
+<div class="meta">${patientName} &nbsp;|&nbsp; ${date}</div>
+<pre>${text}</pre>
+<div class="footer">חתימת הרופא: ${sig || "_________________"}</div>
+<div class="disclaimer">מסמך זה הופק כטיוטה על ידי מערכת NeoCortex AI ומחייב עיון ואישור הרופא המטפל לפני שימוש.</div>
+<script>window.onload=function(){window.print()}<\/script>
+</body></html>`);
+    w.document.close();
+});
+
+document.getElementById("nav-docs")?.addEventListener("click", () => {
+    if (!currentPatientInternalId) {
+        setStatus("docs", "יש לטעון מטופל תחילה", "error");
+    }
+});
+
+// ─── Reminders ───
+async function loadReminders() {
+    if (!currentPatientInternalId) return;
+    const listEl = document.getElementById("reminders-list");
+    try {
+        const res = await fetch(`/p/${encodeURIComponent(currentPatientInternalId)}/reminders`, { credentials: "include" });
+        if (!res.ok) return;
+        const reminders = await res.json();
+        renderReminders(reminders);
+        updateReminderBadge(reminders);
+    } catch(e) { /* silent */ }
+}
+
+function updateReminderBadge(reminders) {
+    const badge = document.getElementById("reminder-badge");
+    if (!badge) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const upcoming = reminders.filter(r => r.date >= today);
+    if (upcoming.length > 0) {
+        badge.textContent = upcoming.length;
+        badge.style.display = "inline";
+    } else {
+        badge.style.display = "none";
+    }
+}
+
+function renderReminders(reminders) {
+    const listEl = document.getElementById("reminders-list");
+    if (!reminders.length) {
+        listEl.innerHTML = `<div class="card"><div class="card-body" style="color:var(--muted);font-size:.88rem;text-align:center;padding:2rem">אין תזכורות</div></div>`;
+        return;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    const sorted = [...reminders].sort((a, b) => a.date.localeCompare(b.date));
+    listEl.innerHTML = sorted.map(r => {
+        const isPast = r.date < today;
+        const isToday = r.date === today;
+        const dateObj = new Date(r.date + "T00:00:00");
+        const dateStr = dateObj.toLocaleDateString("he-IL", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+        const borderColor = isPast ? "#9ca3af" : isToday ? "#dc2626" : "#1a56db";
+        const bg = isToday ? "#fef2f2" : isPast ? "#f9fafb" : "#fff";
+        return `<div class="card" style="margin-bottom:.5rem;border-right:3px solid ${borderColor};background:${bg}">
+            <div class="card-body" style="display:flex;align-items:center;gap:.75rem;padding:.65rem 1rem">
+                <div style="flex:1">
+                    <div style="font-size:.78rem;color:${borderColor};font-weight:700">${dateStr}${isToday ? " — היום!" : isPast ? " — עבר" : ""}</div>
+                    <div style="font-size:.9rem;margin-top:.2rem">${esc(r.note)}</div>
+                    ${r.created_by ? `<div style="font-size:.72rem;color:var(--muted);margin-top:.15rem">נוצר ע"י ${esc(r.created_by)}</div>` : ""}
+                </div>
+                <button onclick="deleteReminder('${r.reminder_id}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:1rem;padding:.2rem .4rem" title="מחק תזכורת">🗑</button>
+            </div>
+        </div>`;
+    }).join("");
+}
+
+document.getElementById("reminder-add-btn")?.addEventListener("click", async () => {
+    if (!currentPatientInternalId) {
+        setStatus("reminder", "יש לטעון מטופל תחילה", "error"); return;
+    }
+    const date = document.getElementById("reminder-date").value;
+    const note = document.getElementById("reminder-note").value.trim();
+    if (!date || !note) {
+        const msg = document.getElementById("reminder-msg");
+        msg.textContent = "נא למלא תאריך והערה";
+        msg.style.color = "#dc2626";
+        return;
+    }
+    try {
+        const res = await fetch(`/p/${encodeURIComponent(currentPatientInternalId)}/reminders`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ date, note }),
+            credentials: "include",
+        });
+        if (!res.ok) throw new Error();
+        const reminders = await res.json();
+        renderReminders(reminders);
+        updateReminderBadge(reminders);
+        document.getElementById("reminder-date").value = "";
+        document.getElementById("reminder-note").value = "";
+        const msg = document.getElementById("reminder-msg");
+        msg.textContent = "✓ תזכורת נוספה";
+        msg.style.color = "#166534";
+        setTimeout(() => { msg.textContent = ""; }, 2000);
+    } catch(e) {
+        const msg = document.getElementById("reminder-msg");
+        msg.textContent = "שגיאה בשמירת תזכורת";
+        msg.style.color = "#dc2626";
+    }
+});
+
+async function deleteReminder(reminderId) {
+    if (!currentPatientInternalId) return;
+    try {
+        const res = await fetch(`/p/${encodeURIComponent(currentPatientInternalId)}/reminders/${reminderId}`, {
+            method: "DELETE", credentials: "include",
+        });
+        if (!res.ok) throw new Error();
+        const reminders = await res.json();
+        renderReminders(reminders);
+        updateReminderBadge(reminders);
+    } catch(e) { /* silent */ }
+}
+
+document.getElementById("nav-reminders")?.addEventListener("click", loadReminders);

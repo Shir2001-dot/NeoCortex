@@ -100,6 +100,14 @@
                 <span class="sidebar-icon">📅</span>
                 <span class="sidebar-label">היסטוריית ביקורים</span>
             </button>
+            <button class="sidebar-item sidebar-clinical hidden" data-view="docs" id="nav-docs">
+                <span class="sidebar-icon">📑</span>
+                <span class="sidebar-label">מסמכים</span>
+            </button>
+            <button class="sidebar-item sidebar-clinical hidden" data-view="reminders" id="nav-reminders">
+                <span class="sidebar-icon">🔔</span>
+                <span class="sidebar-label">תזכורות <span id="reminder-badge" style="display:none;background:#dc2626;color:#fff;border-radius:10px;font-size:.65rem;padding:.05rem .35rem;margin-right:.25rem"></span></span>
+            </button>
         </nav>
 
         <div class="sidebar-footer">
@@ -351,6 +359,81 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- VIEW: DOCUMENTS -->
+        <div class="view hidden" id="view-docs">
+            <div class="view-header">
+                <h1 class="view-title">📑 מסמכים רפואיים</h1>
+            </div>
+            <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:.65rem 1rem;margin-bottom:.75rem;font-size:.83rem;color:#856404">
+                ✏️ <strong>טיוטה בלבד:</strong> המסמך נוצר אוטומטית ומחייב עיון ואישור הרופא המטפל לפני שימוש.
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.75rem;margin-bottom:1rem">
+                <button class="btn btn-outline doc-type-btn" data-type="sick_note" style="padding:.75rem;font-size:.9rem;text-align:center;flex-direction:column;gap:.3rem;display:flex;align-items:center;justify-content:center">
+                    <span style="font-size:1.5rem">🤒</span><span>אישור מחלה</span>
+                </button>
+                <button class="btn btn-outline doc-type-btn" data-type="referral" style="padding:.75rem;font-size:.9rem;text-align:center;flex-direction:column;gap:.3rem;display:flex;align-items:center;justify-content:center">
+                    <span style="font-size:1.5rem">✉️</span><span>מכתב הפניה</span>
+                </button>
+                <button class="btn btn-outline doc-type-btn" data-type="prescription" style="padding:.75rem;font-size:.9rem;text-align:center;flex-direction:column;gap:.3rem;display:flex;align-items:center;justify-content:center">
+                    <span style="font-size:1.5rem">💊</span><span>מרשם</span>
+                </button>
+                <button class="btn btn-outline doc-type-btn" data-type="fitness" style="padding:.75rem;font-size:.9rem;text-align:center;flex-direction:column;gap:.3rem;display:flex;align-items:center;justify-content:center">
+                    <span style="font-size:1.5rem">✅</span><span>תעודת כשירות</span>
+                </button>
+            </div>
+            <!-- Details form (shown after choosing type) -->
+            <div id="doc-form-area" class="hidden">
+                <div class="card" style="margin-bottom:.75rem">
+                    <div class="card-body">
+                        <div id="doc-form-fields" style="display:grid;gap:.6rem"></div>
+                        <button class="btn btn-primary" id="doc-generate-btn" style="margin-top:.75rem;width:100%">⚡ צור מסמך</button>
+                    </div>
+                </div>
+            </div>
+            <div class="status" id="docs-status" style="margin-bottom:.75rem">
+                <div class="spinner" id="docs-spinner"></div>
+                <span id="docs-msg"></span>
+            </div>
+            <div class="card hidden" id="doc-result-card">
+                <div class="card-body">
+                    <div class="medical-doc">
+                        <div class="edit-hint">✏️ ניתן לערוך ישירות</div>
+                        <div id="doc-result-text" class="medical-doc-body" contenteditable="true" style="white-space:pre-wrap;min-height:250px"></div>
+                        <div class="medical-doc-divider" style="margin-top:1rem"></div>
+                        <div class="medical-doc-footer">
+                            <span>חתימת הרופא:</span>
+                            <input type="text" id="doc-doctor-sig" placeholder="ד״ר שם" style="border:none;border-bottom:1px solid #9ca3af;outline:none;width:140px;background:transparent;font-size:.85rem;padding:.1rem .3rem" />
+                        </div>
+                    </div>
+                    <div class="actions-row" style="margin-top:.75rem;justify-content:flex-end;gap:.5rem">
+                        <button type="button" class="btn btn-outline" id="doc-copy-btn">📋 העתק</button>
+                        <button type="button" class="btn btn-outline" id="doc-print-btn">🖨️ הדפס</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: REMINDERS -->
+        <div class="view hidden" id="view-reminders">
+            <div class="view-header">
+                <h1 class="view-title">🔔 תזכורות</h1>
+            </div>
+            <div class="card" style="margin-bottom:.75rem">
+                <div class="card-body">
+                    <div style="font-size:.85rem;font-weight:700;margin-bottom:.6rem;color:var(--text-secondary)">הוסף תזכורת חדשה</div>
+                    <div style="display:grid;grid-template-columns:auto 1fr;gap:.5rem;align-items:start">
+                        <input type="date" id="reminder-date" style="width:160px" />
+                        <input type="text" id="reminder-note" placeholder="לדוגמה: לבדוק תוצאות דם, לקרוא למטופל..." />
+                    </div>
+                    <button class="btn btn-primary" id="reminder-add-btn" style="margin-top:.6rem">+ הוסף תזכורת</button>
+                    <div class="status" id="reminder-status" style="margin-top:.4rem">
+                        <span id="reminder-msg"></span>
+                    </div>
+                </div>
+            </div>
+            <div id="reminders-list"></div>
         </div>
 
     </main>

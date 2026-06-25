@@ -36,8 +36,11 @@ Respond with ONLY a JSON object matching this shape:
   "flags": [{"severity": "info" | "warning" | "critical", "message": string, "relevance": "urgent" | "background"}],
   "differential_diagnosis": string[],
   "recommended_actions": string[],
-  "summary": string
+  "summary": string,
+  "icd_codes": string[]
 }
+
+For "icd_codes": list the most relevant ICD-10 codes (e.g. "E11.9", "I10") based only on documented diagnoses. Include 1-5 codes maximum. If no clear diagnosis is documented, return an empty array.
 
 Do not include any explanation or markdown formatting, only the raw JSON object.
 """

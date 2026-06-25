@@ -98,6 +98,7 @@ class DecisionResult(BaseModel):
     recommended_actions: list[str] = Field(default_factory=list)
     summary: Optional[str] = None
     visit_delta: Optional[VisitDelta] = None
+    icd_codes: list[str] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -169,3 +170,25 @@ class UserInfo(BaseModel):
     role: str
     clinic_id: str
     permissions: list[str] = []
+
+
+class ReminderItem(BaseModel):
+    reminder_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    date: str
+    note: str
+    created_by: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.utcnow().strftime("%Y-%m-%d"))
+
+
+class AddReminderRequest(BaseModel):
+    date: str
+    note: str
+
+
+class DocGenRequest(BaseModel):
+    doc_type: str
+    details: dict = {}
+
+
+class DocGenResult(BaseModel):
+    document: str

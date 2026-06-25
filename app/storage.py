@@ -7,7 +7,7 @@ from cryptography.fernet import Fernet, InvalidToken
 from sqlalchemy import Column, DateTime, ForeignKey, String, Text, create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-from app.models import PatientMaster, PatientRecord, PatientTransaction
+from app.models import PatientMaster, PatientRecord, PatientTransaction, ReminderItem
 
 # ─── Field-level encryption ───
 _raw_key = os.environ.get("ENCRYPTION_KEY", "")
@@ -94,6 +94,7 @@ class PatientMasterRow(Base):
     date_of_birth = Column(String, nullable=True)
     gender = Column(String, nullable=True)
     clinic_id = Column(String, nullable=True)
+    reminders_json = Column(Text, nullable=True)
 
 
 class PatientTransactionRow(Base):
@@ -139,6 +140,7 @@ def _run_migrations() -> None:
         "ALTER TABLE patient_transactions ADD COLUMN IF NOT EXISTS specialty VARCHAR",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions TEXT",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR",
+        "ALTER TABLE patient_master ADD COLUMN IF NOT EXISTS reminders_json TEXT",
         # Fix: convert JSON columns to TEXT to support encrypted data
         "ALTER TABLE patient_records ALTER COLUMN data TYPE TEXT USING data::TEXT",
         "ALTER TABLE patient_transactions ALTER COLUMN extracted_json TYPE TEXT USING extracted_json::TEXT",
@@ -562,6 +564,94 @@ def log_action(user_id: str, action: str, user_name: str | None = None,
             detail=today if action == "view_patient" else detail,
         ))
         session.commit()
+
+
+def _get_master_row_by_internal_id(session, internal_id: str) -> "PatientMasterRow | None":
+    rows = session.query(PatientTransactionRow).all()
+    for row in rows:
+        try:
+            data = _parse(_decrypt(row.extracted_json))
+            if data.get("internal_id") == internal_id:
+                return session.get(PatientMasterRow, row.patient_id)
+        except Exception:
+            continue
+    return None
+
+
+def get_reminders(patient_id: str) -> list[ReminderItem]:
+    with SessionLocal() as session:
+        row = session.get(PatientMasterRow, patient_id)
+        if not row or not row.reminders_json:
+            return []
+        try:
+            items = json.loads(row.reminders_json)
+            return [ReminderItem(**i) for i in items]
+        except Exception:
+            return []
+
+
+def get_reminders_by_internal_id(internal_id: str) -> tuple[str | None, list[ReminderItem]]:
+    with SessionLocal() as session:
+        master = _get_master_row_by_internal_id(session, internal_id)
+        if not master:
+            return None, []
+        reminders = get_reminders(master.patient_id)
+        return master.patient_id, reminders
+
+
+def add_reminder(patient_id: str, item: ReminderItem) -> list[ReminderItem]:
+    with SessionLocal() as session:
+        row = session.get(PatientMasterRow, patient_id)
+        if not row:
+            return []
+        items = []
+        if row.reminders_json:
+            try:
+                items = json.loads(row.reminders_json)
+            except Exception:
+                items = []
+        items.append(item.model_dump())
+        row.reminders_json = json.dumps(items, ensure_ascii=False)
+        session.commit()
+        return [ReminderItem(**i) for i in items]
+
+
+def delete_reminder(patient_id: str, reminder_id: str) -> list[ReminderItem]:
+    with SessionLocal() as session:
+        row = session.get(PatientMasterRow, patient_id)
+        if not row or not row.reminders_json:
+            return []
+        try:
+            items = [i for i in json.loads(row.reminders_json) if i.get("reminder_id") != reminder_id]
+        except Exception:
+            items = []
+        row.reminders_json = json.dumps(items, ensure_ascii=False)
+        session.commit()
+        return [ReminderItem(**i) for i in items]
+
+
+def get_all_reminders_by_clinic(clinic_id: str) -> list[dict]:
+    """Return all upcoming reminders across all patients in a clinic."""
+    with SessionLocal() as session:
+        masters = session.query(PatientMasterRow).filter_by(clinic_id=clinic_id).all()
+        result = []
+        today = datetime.utcnow().strftime("%Y-%m-%d")
+        for master in masters:
+            if not master.reminders_json:
+                continue
+            try:
+                items = json.loads(master.reminders_json)
+                for item in items:
+                    if item.get("date", "") >= today:
+                        result.append({
+                            "patient_id": master.patient_id,
+                            "full_name": _decrypt(master.full_name) if master.full_name else None,
+                            **item,
+                        })
+            except Exception:
+                continue
+        result.sort(key=lambda x: x.get("date", ""))
+        return result
 
 
 def get_audit_log(clinic_id: str, limit: int = 200) -> list[dict]:
