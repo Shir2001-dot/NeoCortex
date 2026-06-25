@@ -378,8 +378,7 @@ async def debug_seed():
             all_users_after = session.query(UserRow).all()
         return {
             "had_seed_user_before": bool(has_seed_user),
-            "users_before": [u.id_number for u in all_users],
-            "users_after": [u.id_number for u in all_users_after],
+            "users": [{"id": u.id_number, "role": u.role, "clinic_id": u.clinic_id} for u in all_users_after],
         }
     except Exception as e:
         return {"error": str(e)}
