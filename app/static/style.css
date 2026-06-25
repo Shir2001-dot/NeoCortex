@@ -28,14 +28,24 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { background: #eef2f7; }
+html { background: #e8eef8; }
 
 #neural-bg {
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: linear-gradient(145deg, #dce8ff 0%, #e8f0ff 40%, #d8e6ff 80%, #e0eaff 100%);
+    background: linear-gradient(135deg, #c8d8f8 0%, #dce8ff 25%, #e8f0ff 50%, #d4e4ff 75%, #ccd8f4 100%);
     z-index: -1;
+}
+
+#neural-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 20% 20%, rgba(26,86,219,.10) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 80%, rgba(15,38,82,.12) 0%, transparent 55%),
+        radial-gradient(ellipse at 60% 10%, rgba(99,148,255,.08) 0%, transparent 45%);
 }
 
 body {
@@ -358,10 +368,12 @@ main {
 
 /* ─── CARD ─── */
 .card {
-    background: #ffffff;
-    border: 1px solid rgba(226,232,240,.85);
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,.7);
     border-radius: var(--radius);
-    box-shadow: var(--shadow);
+    box-shadow: 0 2px 12px rgba(15,38,82,.08), 0 1px 3px rgba(15,38,82,.06);
     overflow: hidden;
     transition: box-shadow .2s ease, transform .2s ease;
 }

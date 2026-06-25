@@ -1,3 +1,36 @@
+// ─── Neural background ───
+(function() {
+    const canvas = document.getElementById("neural-bg");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let W, H, nodes = [];
+    function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+    resize();
+    window.addEventListener("resize", resize);
+    for (let i = 0; i < 32; i++) nodes.push({
+        x: Math.random()*W, y: Math.random()*H,
+        vx: (Math.random()-.5)*.25, vy: (Math.random()-.5)*.25,
+        r: Math.random()*1.5+.5, pulse: Math.random()*Math.PI*2
+    });
+    function draw() {
+        ctx.clearRect(0,0,W,H);
+        for (let i=0;i<nodes.length;i++) for (let j=i+1;j<nodes.length;j++) {
+            const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y, d=Math.sqrt(dx*dx+dy*dy);
+            if(d<160){ ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y);
+                ctx.strokeStyle=`rgba(26,86,219,${(1-d/160)*.07})`; ctx.lineWidth=.6; ctx.stroke(); }
+        }
+        nodes.forEach(n => {
+            n.pulse+=.018; const g=(Math.sin(n.pulse)+1)*.5;
+            ctx.beginPath(); ctx.arc(n.x,n.y,n.r+g*.3,0,Math.PI*2);
+            ctx.fillStyle=`rgba(26,86,219,${.08+g*.08})`; ctx.fill();
+            n.x+=n.vx; n.y+=n.vy;
+            if(n.x<0||n.x>W) n.vx*=-1; if(n.y<0||n.y>H) n.vy*=-1;
+        });
+        requestAnimationFrame(draw);
+    }
+    draw();
+})();
+
 // ─── Elements ───
 const ingestBtn       = document.getElementById("ingest-btn");
 const decisionBtn     = document.getElementById("decision-btn");
