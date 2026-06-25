@@ -96,6 +96,10 @@
                 <span class="sidebar-icon">📄</span>
                 <span class="sidebar-label">סיכום ביקור</span>
             </button>
+            <button class="sidebar-item sidebar-clinical hidden" data-view="history" id="nav-history">
+                <span class="sidebar-icon">📅</span>
+                <span class="sidebar-label">היסטוריית ביקורים</span>
+            </button>
         </nav>
 
         <div class="sidebar-footer">
@@ -296,6 +300,19 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- VIEW: HISTORY -->
+        <div class="view hidden" id="view-history">
+            <div class="view-header">
+                <h1 class="view-title">📅 היסטוריית ביקורים</h1>
+                <button type="button" class="btn btn-outline" id="history-refresh-btn" style="font-size:.82rem">🔄 רענן</button>
+            </div>
+            <div class="status" id="history-status" style="margin-bottom:.75rem">
+                <div class="spinner" id="history-spinner"></div>
+                <span id="history-msg"></span>
+            </div>
+            <div id="history-content"></div>
         </div>
 
         <!-- VIEW: VISIT SUMMARY LETTER -->

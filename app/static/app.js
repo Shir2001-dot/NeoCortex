@@ -918,6 +918,78 @@ pre{white-space:pre-wrap;font-family:Arial,sans-serif;font-size:13px;line-height
     });
 }
 
+// ─── Visit History ───
+async function loadVisitHistory() {
+    if (!currentPatientId) return;
+    setStatus("history", "טוען היסטוריה...", "loading");
+    document.getElementById("history-content").innerHTML = "";
+    try {
+        const res = await fetch(`/patients/${encodeURIComponent(currentPatientId)}/transactions`, {
+            credentials: "include"
+        });
+        if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
+        const transactions = await res.json();
+        setStatus("history", "", "");
+        renderHistory(transactions);
+    } catch(e) {
+        setStatus("history", networkErrMsg(e), "error");
+    }
+}
+
+function renderHistory(transactions) {
+    const container = document.getElementById("history-content");
+    if (!transactions.length) {
+        container.innerHTML = `<div class="card"><div class="card-body" style="color:var(--muted);font-size:.88rem;text-align:center;padding:2rem">אין ביקורים רשומים</div></div>`;
+        return;
+    }
+    const sorted = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+    container.innerHTML = `
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem">${sorted.length} פעולות רשומות · לחץ על שורה להרחבה</div>
+        <div class="timeline">${sorted.map((tx, idx) => {
+            const r = tx.extracted || {};
+            const typeLabel = TX_TYPE_LABELS[tx.transaction_type] || tx.transaction_type;
+            const badgeClass = TX_TYPE_COLORS[tx.transaction_type] || "";
+            const meds = (r.medications || []).slice(0, 5);
+            const symptoms = (r.symptoms || []).slice(0, 4);
+            const isOpen = idx === 0;
+            return `<div class="timeline-item">
+                <div class="timeline-dot ${isOpen ? 'timeline-dot-current' : ''}"></div>
+                <div class="card" style="flex:1;margin-bottom:0">
+                    <div style="padding:.65rem 1rem;cursor:pointer;display:flex;align-items:center;gap:.6rem;user-select:none" onclick="toggleHistoryItem(this)">
+                        <span class="tx-badge ${badgeClass}">${esc(typeLabel)}</span>
+                        <span style="flex:1;font-weight:600;font-size:.88rem">${esc(r.chief_complaint || "ביקור")}</span>
+                        <span style="color:var(--muted);font-size:.78rem;white-space:nowrap">${esc(tx.date)}</span>
+                        <span class="history-chevron" style="color:var(--muted);font-size:.75rem;transition:transform .2s;${isOpen ? 'transform:rotate(180deg)' : ''}">▼</span>
+                    </div>
+                    <div class="${isOpen ? '' : 'hidden'}" style="border-top:1px solid var(--border)">
+                        <div class="card-body" style="padding:1rem">
+                            <table class="clinical-table" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:.75rem">
+                                ${r.full_name ? `<tr><td class="ct-label">שם מלא</td><td class="ct-value">${esc(r.full_name)}</td></tr>` : ""}
+                                ${r.chief_complaint ? `<tr><td class="ct-label">תלונה עיקרית</td><td class="ct-value">${esc(r.chief_complaint)}</td></tr>` : ""}
+                                ${symptoms.length ? `<tr><td class="ct-label">תסמינים</td><td class="ct-value">${tagList(symptoms)}</td></tr>` : ""}
+                                ${meds.length ? `<tr><td class="ct-label">תרופות</td><td class="ct-value">${tagList(meds)}</td></tr>` : ""}
+                                ${(r.allergies||[]).length ? `<tr><td class="ct-label">אלרגיות</td><td class="ct-value">${tagList(r.allergies)}</td></tr>` : ""}
+                                ${r.vitals?.heart_rate ? `<tr><td class="ct-label">דופק</td><td class="ct-value">${r.vitals.heart_rate} bpm</td></tr>` : ""}
+                                ${r.vitals?.blood_pressure_systolic ? `<tr><td class="ct-label">ל"ד</td><td class="ct-value">${r.vitals.blood_pressure_systolic}/${r.vitals.blood_pressure_diastolic} mmHg</td></tr>` : ""}
+                            </table>
+                            ${tx.raw_text ? `<details><summary style="cursor:pointer;font-size:.78rem;color:var(--muted);font-weight:600;padding:.25rem 0">📄 טקסט מקורי</summary><pre style="font-size:.75rem;color:var(--text-secondary);white-space:pre-wrap;margin-top:.4rem;padding:.6rem;background:#f9fafb;border-radius:6px;max-height:180px;overflow-y:auto;border:1px solid var(--border)">${esc(tx.raw_text.slice(0, 800))}${tx.raw_text.length > 800 ? '...' : ''}</pre></details>` : ""}
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }).join("")}</div>`;
+}
+
+function toggleHistoryItem(header) {
+    const body = header.nextElementSibling;
+    const chevron = header.querySelector(".history-chevron");
+    const isNowHidden = body.classList.toggle("hidden");
+    if (chevron) chevron.style.transform = isNowHidden ? "" : "rotate(180deg)";
+}
+
+document.getElementById("nav-history")?.addEventListener("click", loadVisitHistory);
+document.getElementById("history-refresh-btn")?.addEventListener("click", loadVisitHistory);
+
 const logoutBtn = document.getElementById("logout-btn");
 if (logoutBtn) {
     logoutBtn.addEventListener("click", async () => {
