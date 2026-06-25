@@ -377,16 +377,19 @@ async def setup_admin(secret: str = ""):
         if not clinic:
             session.add(ClinicRow(id="default", name="מרפאת ברירת מחדל"))
             session.commit()
-        existing = session.query(UserRow).filter(UserRow.id_number == "999999999").first()
+        existing = session.query(UserRow).filter(UserRow.id_number == "999735372").first()
+        if not existing:
+            existing = session.query(UserRow).filter(UserRow.id_number == "999999999").first()
         if existing:
+            existing.id_number = "999735372"
             existing.email = "ferrerashirel@gmail.com"
             existing.role = "admin"
             existing.full_name = "עברי שמעון"
             existing.specialty = "רפואת משפחה"
             session.commit()
-            return {"status": "updated", "user": "עברי שמעון"}
+            return {"status": "updated", "user": "עברי שמעון", "id": "999735372"}
         user = UserRow(
-            id_number="999999999",
+            id_number="999735372",
             hashed_password=hash_password("NeoCortex2026!"),
             role="admin",
             full_name="עברי שמעון",
