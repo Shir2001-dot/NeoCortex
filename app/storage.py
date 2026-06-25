@@ -169,56 +169,48 @@ _run_migrations()
 
 
 def seed_demo_data(session) -> None:
-    """Create demo clinic and users if they don't already exist."""
+    """Create demo clinic, users, and demo patient if they don't already exist."""
     from app.auth import hash_password
 
-    # Check if already seeded — any users in the default clinic means skip
-    clinic = session.get(ClinicRow, "default")
-    if clinic and session.query(UserRow).filter_by(clinic_id="default").count() > 0:
-        return
-
-    # Create default clinic
+    # Create default clinic if missing
     clinic = session.get(ClinicRow, "default")
     if not clinic:
         session.add(ClinicRow(id="default", name="מרפאת NeoCortex"))
+        session.flush()
 
-    # Admin
-    session.add(UserRow(
-        id_number="000000000",
-        full_name="מנהל מערכת",
-        specialty=None,
-        role="admin",
-        clinic_id="default",
-        hashed_password=hash_password("admin123"),
-        permissions=json.dumps([]),
-    ))
+    # Seed users only if none exist yet
+    if session.query(UserRow).filter_by(clinic_id="default").count() == 0:
+        session.add(UserRow(
+            id_number="000000000",
+            full_name="מנהל מערכת",
+            specialty=None,
+            role="admin",
+            clinic_id="default",
+            hashed_password=hash_password("admin123"),
+            permissions=json.dumps([]),
+        ))
+        session.add(UserRow(
+            id_number="123456789",
+            full_name='ד"ר כהן',
+            specialty="פסיכיאטריה",
+            role="doctor",
+            clinic_id="default",
+            hashed_password=hash_password("doctor123"),
+            permissions=json.dumps(ROLE_DEFAULT_PERMISSIONS["doctor"]),
+        ))
+        session.add(UserRow(
+            id_number="987654321",
+            full_name="שרה לוי",
+            specialty=None,
+            role="secretary",
+            clinic_id="default",
+            hashed_password=hash_password("secretary123"),
+            permissions=json.dumps(ROLE_DEFAULT_PERMISSIONS["secretary"]),
+        ))
 
-    # Doctor — full permissions
-    session.add(UserRow(
-        id_number="123456789",
-        full_name='ד"ר כהן',
-        specialty="פסיכיאטריה",
-        role="doctor",
-        clinic_id="default",
-        hashed_password=hash_password("doctor123"),
-        permissions=json.dumps(ROLE_DEFAULT_PERMISSIONS["doctor"]),
-    ))
-
-    # Secretary — read only
-    session.add(UserRow(
-        id_number="987654321",
-        full_name="שרה לוי",
-        specialty=None,
-        role="secretary",
-        clinic_id="default",
-        hashed_password=hash_password("secretary123"),
-        permissions=json.dumps(ROLE_DEFAULT_PERMISSIONS["secretary"]),
-    ))
-
-    # Demo patient
+    # Always ensure demo patient exists
     demo_patient_id = "555555555"
-    existing_master = session.query(PatientMasterRow).filter_by(patient_id=demo_patient_id).first()
-    if not existing_master:
+    if not session.query(PatientMasterRow).filter_by(patient_id=demo_patient_id).first():
         import uuid as _uuid
         internal_id = str(_uuid.uuid4())
         record = PatientRecord(
@@ -251,13 +243,6 @@ def seed_demo_data(session) -> None:
             referral_date="2026-06-20",
             source="text",
             raw_text="מטופל דוד לוי, יליד 15.3.1968. מעקב פסיכיאטרי.",
-        )
-        master = PatientMaster(
-            patient_id=demo_patient_id,
-            full_name="דוד לוי",
-            date_of_birth="1968-03-15",
-            gender="זכר",
-            transactions=[],
         )
         session.add(PatientMasterRow(
             patient_id=demo_patient_id,
