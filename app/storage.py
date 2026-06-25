@@ -345,17 +345,19 @@ def get_clinic(session, clinic_id: str) -> ClinicRow | None:
     return session.get(ClinicRow, clinic_id)
 
 
-def get_patients_by_clinic(session, clinic_id: str) -> list:
+def get_patients_by_clinic(session, clinic_id: str, doctor_id_number: str | None = None) -> list:
     from sqlalchemy import or_
-    return (session.query(PatientRecordRow)
-            .filter(or_(PatientRecordRow.clinic_id == clinic_id,
-                        PatientRecordRow.clinic_id == None))
-            .all())
+    q = session.query(PatientRecordRow).filter(
+        or_(PatientRecordRow.clinic_id == clinic_id, PatientRecordRow.clinic_id == None)
+    )
+    if doctor_id_number:
+        q = q.filter(PatientRecordRow.doctor_id_number == doctor_id_number)
+    return q.all()
 
 
-def search_patients_by_clinic(session, clinic_id: str, query: str) -> list[dict]:
+def search_patients_by_clinic(session, clinic_id: str, query: str, doctor_id_number: str | None = None) -> list[dict]:
     """Search patients by name, medication, or diagnosis. Returns decrypted matching records."""
-    rows = get_patients_by_clinic(session, clinic_id)
+    rows = get_patients_by_clinic(session, clinic_id, doctor_id_number=doctor_id_number)
     q = query.strip().lower()
     results = []
     for row in rows:

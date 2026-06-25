@@ -578,8 +578,11 @@ async def search_patients(q: str, user: dict = Depends(require_permission("view_
     clinic_id = user.get("clinic_id")
     if not clinic_id or not q.strip():
         return []
+    # Admins and secretaries see all patients; clinical staff see only their own
+    role = user.get("role")
+    doctor_filter = user.get("id_number") if role in ("doctor", "intern", "nurse") else None
     with SessionLocal() as session:
-        results = search_patients_by_clinic(session, clinic_id, q)
+        results = search_patients_by_clinic(session, clinic_id, q, doctor_id_number=doctor_filter)
     log_action(user["id_number"], "search_patients", user_name=user.get("full_name"),
                clinic_id=clinic_id, detail=q)
     return results
@@ -663,10 +666,9 @@ async def get_patients(user: dict = Depends(get_current_user)) -> list[dict]:
             for p in list_patients()
         ]
     with SessionLocal() as session:
-        rows = get_patients_by_clinic(session, clinic_id)
-        if user.get("role") == "doctor":
-            specialty = user.get("specialty")
-            rows = [r for r in rows if r.specialty is None or r.specialty == specialty]
+        role = user.get("role")
+        doctor_filter = user.get("id_number") if role in ("doctor", "intern", "nurse") else None
+        rows = get_patients_by_clinic(session, clinic_id, doctor_id_number=doctor_filter)
         import json
         result = []
         for row in rows:
