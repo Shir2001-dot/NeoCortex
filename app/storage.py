@@ -172,8 +172,9 @@ def seed_demo_data(session) -> None:
     """Create demo clinic and users if they don't already exist."""
     from app.auth import hash_password
 
-    # Check if already seeded
-    if session.get(UserRow, "000000000"):
+    # Check if already seeded — any users in the default clinic means skip
+    clinic = session.get(ClinicRow, "default")
+    if clinic and session.query(UserRow).filter_by(clinic_id="default").count() > 0:
         return
 
     # Create default clinic
