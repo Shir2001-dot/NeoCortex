@@ -6,6 +6,7 @@ from typing import Optional
 
 from authlib.integrations.starlette_client import OAuth
 from fastapi import Cookie, Depends, FastAPI, Form, HTTPException, Request, UploadFile
+from pydantic import BaseModel
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler
