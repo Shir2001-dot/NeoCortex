@@ -367,6 +367,24 @@ async def reset_password_page() -> FileResponse:
     return FileResponse("app/static/reset-password.html")
 
 
+@app.get("/debug-seed")
+async def debug_seed():
+    from app.storage import SessionLocal, seed_demo_data, UserRow
+    try:
+        with SessionLocal() as session:
+            has_seed_user = session.get(UserRow, "000000000")
+            all_users = session.query(UserRow).all()
+            seed_demo_data(session)
+            all_users_after = session.query(UserRow).all()
+        return {
+            "had_seed_user_before": bool(has_seed_user),
+            "users_before": [u.id_number for u in all_users],
+            "users_after": [u.id_number for u in all_users_after],
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.get("/setup-admin")
 async def setup_admin(secret: str = ""):
     if secret != os.environ.get("SETUP_SECRET", ""):
