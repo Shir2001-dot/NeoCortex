@@ -186,7 +186,10 @@ async def forgot_password(request: Request, body: dict):
         if not user or (user.email or "").lower() != email:
             return {"ok": True, "msg": "אם הפרטים נכונים, נשלח אליך מייל לאיפוס סיסמה"}
         token = create_reset_token(session, id_number)
-        _send_reset_email(email, user.full_name, token)
+        try:
+            _send_reset_email(email, user.full_name, token)
+        except Exception as e:
+            print(f"[SMTP ERROR] Failed to send reset email to {email}: {e}")
     return {"ok": True, "msg": "אם הפרטים נכונים, נשלח אליך מייל לאיפוס סיסמה"}
 
 
@@ -225,11 +228,10 @@ def _send_reset_email(to_email: str, full_name: str, token: str) -> None:
     smtp_host = os.environ.get("SMTP_HOST", "")
     smtp_port = int(os.environ.get("SMTP_PORT", "587"))
     smtp_user = os.environ.get("SMTP_USER", "")
-    smtp_pass = os.environ.get("SMTP_PASS", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "").replace(" ", "")  # strip spaces from App Password
     from_email = os.environ.get("SMTP_FROM", smtp_user)
     base_url = os.environ.get("BASE_URL", "https://neocortex-api.onrender.com")
     if not smtp_host or not smtp_user:
-        # Dev mode: just print the link
         print(f"[DEV] Password reset link for {to_email}: {base_url}/reset-password?token={token}")
         return
     reset_url = f"{base_url}/reset-password?token={token}"
@@ -250,8 +252,10 @@ NeoCortex AI
     msg["Subject"] = "איפוס סיסמה — NeoCortex AI"
     msg["From"] = from_email
     msg["To"] = to_email
-    with smtplib.SMTP(smtp_host, smtp_port) as server:
+    with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
+        server.ehlo()
         server.starttls()
+        server.ehlo()
         server.login(smtp_user, smtp_pass)
         server.sendmail(from_email, [to_email], msg.as_string())
 
