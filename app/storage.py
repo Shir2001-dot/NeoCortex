@@ -80,7 +80,7 @@ class PatientRecordRow(Base):
 
     patient_id = Column(String, primary_key=True)
     data = Column(Text, nullable=False)
-    created_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     clinic_id = Column(String, nullable=True)
     doctor_id_number = Column(String, nullable=True)
     specialty = Column(String, nullable=True)
@@ -261,13 +261,12 @@ def seed_demo_data(session) -> None:
         session.add(PatientMasterRow(
             patient_id=demo_patient_id,
             clinic_id="default",
-            data=_encrypt(master.model_dump_json()),
         ))
         session.add(PatientRecordRow(
-            internal_id=internal_id,
             patient_id=demo_patient_id,
             clinic_id="default",
             data=_encrypt(record.model_dump_json()),
+            created_at=datetime.utcnow(),
         ))
 
     session.commit()
