@@ -1087,3 +1087,17 @@ async def delete_reminder_endpoint(internal_id: str, reminder_id: str, user: dic
 async def clinic_reminders(user: dict = Depends(get_current_user)) -> list[dict]:
     clinic_id = user.get("clinic_id", "default")
     return get_all_reminders_by_clinic(clinic_id)
+
+
+class NameUpdateRequest(BaseModel):
+    full_name: str
+
+@app.patch("/p/{internal_id}/name")
+async def update_patient_name(internal_id: str, request: NameUpdateRequest, user: dict = Depends(require_permission("edit_records"))):
+    record = get_record_by_internal_id(internal_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    updated = record.model_copy(update={"full_name": request.full_name})
+    save_record(updated, clinic_id=user.get("clinic_id"), doctor_id_number=user.get("id_number"))
+    upsert_master(record.patient_id, request.full_name, record.date_of_birth, record.gender)
+    return {"full_name": request.full_name}

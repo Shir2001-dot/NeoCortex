@@ -167,7 +167,7 @@ function renderRecord(r) {
 
     recordContent.innerHTML = `
         <table class="clinical-table" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:1rem">
-            ${clinicalRow("שם מלא", esc(r.full_name) || "—")}
+            ${clinicalRow("שם מלא", `<span id="patient-name-display" style="cursor:pointer;border-bottom:1px dashed var(--border)" title="לחץ לעריכה" onclick="editPatientName(this)">${esc(r.full_name) || "—"}</span>`)}
             ${clinicalRow("תאריך לידה", `<span style="white-space:nowrap">${esc(r.date_of_birth) || "—"}</span>`)}
             ${clinicalRow("מגדר", esc(r.gender) || "—")}
             ${v.heart_rate ? clinicalRow("דופק", v.heart_rate + " bpm") : ""}
@@ -1327,3 +1327,41 @@ async function deleteReminder(reminderId) {
 }
 
 document.getElementById("nav-reminders")?.addEventListener("click", loadReminders);
+
+// ─── Inline patient name edit ───
+function editPatientName(span) {
+    const current = span.textContent;
+    const input = document.createElement("input");
+    input.value = current === "—" ? "" : current;
+    input.style.cssText = "font-size:inherit;font-family:inherit;border:none;border-bottom:2px solid var(--primary);outline:none;background:transparent;width:200px;padding:0";
+    span.replaceWith(input);
+    input.focus();
+
+    async function save() {
+        const newName = input.value.trim() || current;
+        const newSpan = document.createElement("span");
+        newSpan.id = "patient-name-display";
+        newSpan.style.cssText = "cursor:pointer;border-bottom:1px dashed var(--border)";
+        newSpan.title = "לחץ לעריכה";
+        newSpan.textContent = newName;
+        newSpan.onclick = function() { editPatientName(this); };
+        input.replaceWith(newSpan);
+        if (newName === current) return;
+        if (currentRecord) currentRecord.full_name = newName;
+        const titleEl = document.getElementById("record-card-title");
+        if (titleEl) titleEl.textContent = `תיק מטופל · ${newName}`;
+        updateSidebarPatient(newName, currentPatientId);
+        if (currentPatientInternalId) {
+            try {
+                await fetch(`/p/${encodeURIComponent(currentPatientInternalId)}/name`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ full_name: newName }),
+                    credentials: "include",
+                });
+            } catch(e) { /* silent */ }
+        }
+    }
+    input.addEventListener("blur", save);
+    input.addEventListener("keydown", e => { if (e.key === "Enter") input.blur(); if (e.key === "Escape") { input.value = current; input.blur(); } });
+}
