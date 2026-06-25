@@ -379,6 +379,12 @@ async def setup_admin(secret: str = ""):
         else:
             clinic.name = "מרפאת ארבל"
         session.commit()
+        # Move demo patient to default clinic
+        from app.storage import PatientMasterRow, PatientRecordRow
+        session.query(PatientMasterRow).filter_by(clinic_id="clinic-demo").update({"clinic_id": "default"})
+        session.query(PatientRecordRow).filter_by(clinic_id="clinic-demo").update({"clinic_id": "default"})
+        session.commit()
+
         existing = session.query(UserRow).filter(UserRow.id_number == "999735372").first()
         if not existing:
             existing = session.query(UserRow).filter(UserRow.id_number == "999999999").first()
@@ -388,6 +394,7 @@ async def setup_admin(secret: str = ""):
             existing.role = "admin"
             existing.full_name = "עברי שמעון"
             existing.specialty = "רפואת משפחה"
+            existing.clinic_id = "default"
             session.commit()
             return {"status": "updated", "user": "עברי שמעון", "id": "999735372"}
         user = UserRow(

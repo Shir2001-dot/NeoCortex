@@ -186,7 +186,7 @@ def seed_demo_data(session) -> None:
         full_name="מנהל מערכת",
         specialty=None,
         role="admin",
-        clinic_id="clinic-demo",
+        clinic_id="default",
         hashed_password=hash_password("admin123"),
         permissions=json.dumps([]),
     ))
@@ -197,7 +197,7 @@ def seed_demo_data(session) -> None:
         full_name='ד"ר כהן',
         specialty="פסיכיאטריה",
         role="doctor",
-        clinic_id="clinic-demo",
+        clinic_id="default",
         hashed_password=hash_password("doctor123"),
         permissions=json.dumps(ROLE_DEFAULT_PERMISSIONS["doctor"]),
     ))
@@ -208,7 +208,7 @@ def seed_demo_data(session) -> None:
         full_name="שרה לוי",
         specialty=None,
         role="secretary",
-        clinic_id="clinic-demo",
+        clinic_id="default",
         hashed_password=hash_password("secretary123"),
         permissions=json.dumps(ROLE_DEFAULT_PERMISSIONS["secretary"]),
     ))
@@ -259,13 +259,13 @@ def seed_demo_data(session) -> None:
         )
         session.add(PatientMasterRow(
             patient_id=demo_patient_id,
-            clinic_id="clinic-demo",
+            clinic_id="default",
             data=_encrypt(master.model_dump_json()),
         ))
         session.add(PatientRecordRow(
             internal_id=internal_id,
             patient_id=demo_patient_id,
-            clinic_id="clinic-demo",
+            clinic_id="default",
             data=_encrypt(record.model_dump_json()),
         ))
 
