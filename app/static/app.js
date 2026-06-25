@@ -261,14 +261,34 @@ function renderDecision(result) {
 // ─── Ingest ───
 ingestBtn.addEventListener("click", async () => {
     const patientId = "auto-" + Date.now();
-
-    setStatus("ingest","מעבד מסמך...","loading");
     ingestBtn.disabled = true;
     decisionCard.classList.add("hidden");
 
+    // Step-by-step progress messages
+    const isPdf = currentTab === "pdf";
+    const steps = isPdf
+        ? [
+            [0,    "קורא קובץ PDF..."],
+            [1500, "שולח מסמך לשרת..."],
+            [3500, "AI מנתח את המסמך הרפואי..."],
+            [8000, "מחלץ אבחנות, תרופות ומדדים..."],
+            [14000,"מסיים עיבוד נתונים קליניים..."],
+          ]
+        : [
+            [0,    "שולח טקסט לניתוח..."],
+            [2000, "AI מנתח את המסמך הרפואי..."],
+            [7000, "מחלץ אבחנות, תרופות ומדדים..."],
+            [13000,"מסיים עיבוד נתונים קליניים..."],
+          ];
+
+    const timers = steps.map(([delay, msg]) =>
+        setTimeout(() => setStatus("ingest", msg, "loading"), delay)
+    );
+    const clearTimers = () => timers.forEach(clearTimeout);
+
     try {
         let res;
-        if (currentTab === "pdf") {
+        if (isPdf) {
             const file = document.getElementById("pdf-file").files[0];
             if (!file) throw new Error("נא לבחור קובץ PDF");
             const arrayBuffer = await file.arrayBuffer();
@@ -291,6 +311,7 @@ ingestBtn.addEventListener("click", async () => {
             });
         }
 
+        clearTimers();
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
             throw new Error(err.detail || `שגיאת שרת (${res.status})`);
@@ -306,10 +327,10 @@ ingestBtn.addEventListener("click", async () => {
         unlockClinicalNav(tx.patient_id);
         updateSidebarPatient(tx.extracted.full_name, tx.patient_id);
         showView("record");
-        setStatus("ingest","הופק בהצלחה ✓","success");
-
+        setStatus("ingest", "✓ המסמך עובד בהצלחה", "success");
 
     } catch (e) {
+        clearTimers();
         setStatus("ingest", networkErrMsg(e), "error");
     } finally {
         ingestBtn.disabled = false;
