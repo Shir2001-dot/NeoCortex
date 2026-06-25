@@ -250,7 +250,7 @@ async function loadClinic() {
     if (!res || !res.ok) return;
     const d = await res.json();
     document.getElementById("clinic-title").textContent = d.name;
-    document.getElementById("clinic-sub").textContent = "מספר קליניקה: " + d.id;
+    document.getElementById("clinic-sub").textContent = "";
 }
 
 // ── Load me ────────────────────────────────────────────────────────────────────
