@@ -716,7 +716,14 @@ async def print_patient(patient_id: str, user: dict = Depends(require_permission
         import html as html_mod
         if not items:
             return ""
-        return "<ul>" + "".join(f"<li>{html_mod.escape(i)}</li>" for i in items) + "</ul>"
+        def to_str(i):
+            if isinstance(i, str):
+                return i
+            if hasattr(i, "name"):
+                status = "" if getattr(i, "active", True) else " (לא פעיל)"
+                return f"{i.name}{status}"
+            return str(i)
+        return "<ul>" + "".join(f"<li>{html_mod.escape(to_str(i))}</li>" for i in items) + "</ul>"
 
     import html as html_mod
 
