@@ -11,3 +11,6 @@ env/
 dist/
 build/
 .DS_Store
+neocortex.db
+.claude/
+node_modules/

@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NeoCortex AI – ניהול משתמשים</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <style>
+        table { width: 100%; border-collapse: collapse; font-size: .87rem; }
+        th { background: var(--bg); font-weight: 700; color: var(--text-secondary); padding: .5rem .75rem; text-align: right; border-bottom: 2px solid var(--border); }
+        td { padding: .5rem .75rem; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(26,86,219,.03); }
+
+        .role-badge { display:inline-block; padding:.15rem .55rem; border-radius:20px; font-size:.73rem; font-weight:700; }
+        .role-admin    { background:#fef3c7; color:#92400e; }
+        .role-doctor   { background:#d1fae5; color:#065f46; }
+        .role-secretary{ background:#dbeafe; color:#1e40af; }
+        .role-nurse    { background:#ede9fe; color:#5b21b6; }
+        .role-intern   { background:#fce7f3; color:#9d174d; }
+
+        .perm-chips { display:flex; flex-wrap:wrap; gap:.25rem; }
+        .perm-chip  { display:inline-block; padding:.1rem .45rem; border-radius:4px; font-size:.7rem; font-weight:600; background:rgba(26,86,219,.08); color:var(--primary); }
+
+        /* Add-user drawer */
+        .drawer-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:200; }
+        .drawer-overlay.open { display:flex; align-items:flex-start; justify-content:flex-end; }
+        .drawer { background:#fff; width:420px; max-width:95vw; height:100vh; overflow-y:auto; box-shadow:-8px 0 32px rgba(0,0,0,.18); padding:1.75rem 1.5rem; }
+        .drawer h3 { font-size:1.05rem; font-weight:700; color:var(--text); margin-bottom:1.25rem; border-bottom:2px solid var(--border); padding-bottom:.6rem; }
+        .form-group { margin-bottom:.9rem; }
+        .form-group label { display:block; font-size:.78rem; font-weight:600; color:var(--text-secondary); margin-bottom:.28rem; }
+        .perm-section { margin-top:1rem; }
+        .perm-section-title { font-size:.82rem; font-weight:700; color:var(--text); margin-bottom:.6rem; }
+        .perm-grid { display:grid; grid-template-columns:1fr 1fr; gap:.4rem .75rem; }
+        .perm-item { display:flex; align-items:center; gap:.4rem; font-size:.82rem; color:var(--text); cursor:pointer; }
+        .perm-item input[type=checkbox] { accent-color: var(--primary); width:15px; height:15px; cursor:pointer; }
+        .drawer-actions { display:flex; gap:.5rem; margin-top:1.25rem; }
+        .msg { border-radius:8px; padding:.5rem .8rem; font-size:.83rem; margin-top:.75rem; }
+        .msg.success { background:#d1fae5; border:1px solid #6ee7b7; color:#065f46; }
+        .msg.error   { background:#fef2f2; border:1px solid #fca5a5; color:#c81e1e; }
+    </style>
+</head>
+<body>
+<canvas id="neural-bg"></canvas>
+
+<header>
+    <div class="logo">
+        <div class="logo-text">
+            <div class="logo-wordmark">
+                <bdi dir="ltr"><span class="logo-neo">NEO</span><span class="logo-cortex">CORTEX</span></bdi>
+            </div>
+            <div class="logo-sub">ניהול קליניקה</div>
+        </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:.75rem">
+        <span id="header-admin-name" style="color:rgba(255,255,255,.85);font-size:.8rem;font-weight:600"></span>
+        <button id="logout-btn" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:.3rem .7rem;font-size:.78rem;cursor:pointer">יציאה</button>
+    </div>
+</header>
+
+<main>
+    <!-- Tabs -->
+    <div style="display:flex;gap:.5rem;margin-bottom:1rem">
+        <button class="btn btn-primary" id="tab-users-btn" onclick="showTab('users')">👥 משתמשים</button>
+        <button class="btn btn-outline" id="tab-audit-btn" onclick="showTab('audit')">📋 לוג פעולות</button>
+    </div>
+
+    <!-- Users tab -->
+    <div id="tab-users">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon">🏥</div>
+            <div>
+                <h2 id="clinic-title">ניהול קליניקה</h2>
+                <div style="font-size:.82rem;color:var(--primary);font-weight:600" id="clinic-sub"></div>
+            </div>
+            <button class="btn btn-primary" id="open-drawer-btn" style="margin-right:auto">+ הוסף משתמש</button>
+        </div>
+        <div class="card-body">
+            <div style="overflow-x:auto">
+                <table id="users-table">
+                    <thead>
+                        <tr>
+                            <th>שם מלא</th>
+                            <th>ת.ז</th>
+                            <th>תמחות</th>
+                            <th>תפקיד</th>
+                            <th>הרשאות</th>
+                            <th>פעולות</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody">
+                        <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1.5rem">טוען...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="table-msg" style="display:none" class="msg"></div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Audit log tab -->
+    <div id="tab-audit" style="display:none">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-icon">📋</div>
+            <div><h2>לוג פעולות</h2></div>
+        </div>
+        <div class="card-body">
+            <div style="overflow-x:auto">
+                <table id="audit-table">
+                    <thead>
+                        <tr>
+                            <th>תאריך ושעה</th>
+                            <th>משתמש</th>
+                            <th>פעולה</th>
+                            <th>מטופל</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-tbody">
+                        <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:1.5rem">טוען...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    </div>
+</main>
+
+<!-- Add User Drawer -->
+<div class="drawer-overlay" id="drawer-overlay">
+    <div class="drawer">
+        <h3>הוספת משתמש חדש</h3>
+
+        <div class="form-group">
+            <label>מספר תעודת זהות *</label>
+            <input type="text" id="new-id" placeholder="9 ספרות" inputmode="numeric" maxlength="9" />
+        </div>
+        <div class="form-group">
+            <label>שם מלא *</label>
+            <input type="text" id="new-name" placeholder='ד"ר ישראל ישראלי' />
+        </div>
+        <div class="form-group">
+            <label>תחום / התמחות</label>
+            <input type="text" id="new-specialty" placeholder="פסיכיאטריה, אורתופדיה, אחות..." />
+        </div>
+        <div class="form-group">
+            <label>תפקיד *</label>
+            <select id="new-role">
+                <option value="doctor">רופא בכיר</option>
+                <option value="intern">רופא מתמחה / סטודנט</option>
+                <option value="nurse">אחות מוסמכת</option>
+                <option value="secretary">מזכירה / קבלה</option>
+                <option value="admin">מנהל קליניקה</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>אימייל (לאיפוס סיסמה)</label>
+            <input type="email" id="new-email" placeholder="doctor@clinic.co.il" />
+        </div>
+        <div class="form-group">
+            <label>סיסמה זמנית *</label>
+            <input type="password" id="new-password" placeholder="לפחות 6 תווים" />
+        </div>
+
+        <div class="perm-section">
+            <div class="perm-section-title">הרשאות גישה</div>
+            <div style="font-size:.75rem;color:var(--muted);margin-bottom:.65rem">מסומנות לפי ברירת מחדל של התפקיד — ניתן לשנות</div>
+            <div class="perm-grid">
+                <label class="perm-item">
+                    <input type="checkbox" id="perm-view_records" value="view_records" />
+                    צפייה בתיקים
+                </label>
+                <label class="perm-item">
+                    <input type="checkbox" id="perm-edit_records" value="edit_records" />
+                    עריכת תיקים ומדדים
+                </label>
+                <label class="perm-item">
+                    <input type="checkbox" id="perm-prescribe" value="prescribe" />
+                    רישום תרופות
+                </label>
+                <label class="perm-item">
+                    <input type="checkbox" id="perm-drug_interactions" value="drug_interactions" />
+                    בדיקת אינטראקציות
+                </label>
+                <label class="perm-item">
+                    <input type="checkbox" id="perm-clinical_analysis" value="clinical_analysis" />
+                    ניתוח קליני AI
+                </label>
+                <label class="perm-item">
+                    <input type="checkbox" id="perm-session_summary" value="session_summary" />
+                    סיכום פגישה
+                </label>
+            </div>
+        </div>
+
+        <div id="drawer-msg" style="display:none" class="msg"></div>
+
+        <div class="drawer-actions">
+            <button class="btn btn-primary" id="add-user-btn" style="flex:1">הוסף משתמש</button>
+            <button class="btn btn-outline" id="close-drawer-btn">ביטול</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── Permission defaults per role ──────────────────────────────────────────────
+const ROLE_DEFAULTS = {
+    admin:     [],
+    doctor:    ["view_records","edit_records","prescribe","clinical_analysis","session_summary","drug_interactions"],
+    intern:    ["view_records","clinical_analysis","session_summary"],
+    nurse:     ["view_records","edit_records","drug_interactions"],
+    secretary: ["view_records"],
+};
+
+const PERM_LABELS = {
+    view_records:       "צפייה בתיקים",
+    edit_records:       "עריכה ומדדים",
+    prescribe:          "רישום תרופות",
+    drug_interactions:  "אינטראקציות",
+    clinical_analysis:  "ניתוח קליני",
+    session_summary:    "סיכום פגישה",
+};
+
+const ROLE_LABELS = {
+    admin: "מנהל", doctor: "רופא בכיר", intern: "רופא מתמחה",
+    nurse: "אחות", secretary: "מזכירה",
+};
+
+// ── API helper ────────────────────────────────────────────────────────────────
+async function api(url, opts = {}) {
+    const res = await fetch(url, {credentials:"include", ...opts});
+    if (res.status === 401) { location.href = "/login"; return null; }
+    return res;
+}
+
+// ── Role defaults → checkboxes ────────────────────────────────────────────────
+document.getElementById("new-role").addEventListener("change", e => {
+    const perms = ROLE_DEFAULTS[e.target.value] || [];
+    ["view_records","edit_records","prescribe","drug_interactions","clinical_analysis","session_summary"].forEach(p => {
+        document.getElementById("perm-" + p).checked = perms.includes(p);
+    });
+});
+// Set initial state
+document.getElementById("new-role").dispatchEvent(new Event("change"));
+
+// ── Load clinic info ──────────────────────────────────────────────────────────
+async function loadClinic() {
+    const res = await api("/admin/clinic");
+    if (!res || !res.ok) return;
+    const d = await res.json();
+    document.getElementById("clinic-title").textContent = d.name;
+    document.getElementById("clinic-sub").textContent = "";
+}
+
+// ── Load me ────────────────────────────────────────────────────────────────────
+let myIdNumber = null;
+async function loadMe() {
+    const res = await api("/auth/me");
+    if (!res || !res.ok) return;
+    const d = await res.json();
+    myIdNumber = d.id_number;
+    document.getElementById("header-admin-name").textContent = d.full_name || "";
+}
+
+// ── Load users ────────────────────────────────────────────────────────────────
+function esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function roleLabel(role) {
+    const cls = {admin:"role-admin",doctor:"role-doctor",intern:"role-intern",nurse:"role-nurse",secretary:"role-secretary"};
+    return `<span class="role-badge ${cls[role]||''}">${esc(ROLE_LABELS[role]||role)}</span>`;
+}
+
+function permChips(perms, role) {
+    if (role === 'admin') return '<span style="color:#1a56db;font-size:.75rem;font-weight:600">כל ההרשאות</span>';
+    if (!perms?.length) return '<span style="color:var(--muted);font-size:.75rem">ללא</span>';
+    return `<div class="perm-chips">${perms.map(p=>`<span class="perm-chip">${esc(PERM_LABELS[p]||p)}</span>`).join("")}</div>`;
+}
+
+async function loadUsers() {
+    const res = await api("/admin/users");
+    if (!res) return;
+    const tbody = document.getElementById("users-tbody");
+    if (!res.ok) {
+        tbody.innerHTML = '<tr><td colspan="6" style="color:#c81e1e;text-align:center;padding:1rem">שגיאה בטעינת משתמשים</td></tr>';
+        return;
+    }
+    const users = await res.json();
+    if (!users.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1.5rem">אין משתמשים</td></tr>';
+        return;
+    }
+    tbody.innerHTML = users.map(u => `
+        <tr>
+            <td style="font-weight:600">${esc(u.full_name)}</td>
+            <td><bdi dir="ltr" style="font-family:monospace;font-size:.82rem">${esc(u.id_number)}</bdi></td>
+            <td>${esc(u.specialty||'—')}</td>
+            <td>${roleLabel(u.role)}</td>
+
+            <td>${permChips(u.permissions, u.role)}</td>
+            <td>
+                ${u.id_number !== myIdNumber
+                    ? `<button class="btn btn-outline" style="font-size:.73rem;padding:.22rem .55rem;color:#c81e1e;border-color:#fca5a5" onclick="deleteUser('${esc(u.id_number)}','${esc(u.full_name)}')">מחק</button>`
+                    : '<span style="font-size:.75rem;color:var(--muted)">אתה</span>'
+                }
+            </td>
+        </tr>
+    `).join("");
+}
+
+// ── Delete user ───────────────────────────────────────────────────────────────
+async function deleteUser(idNumber, name) {
+    if (!confirm(`למחוק את ${name}?`)) return;
+    const res = await api(`/admin/users/${idNumber}`, {method:"DELETE"});
+    if (!res) return;
+    const msgEl = document.getElementById("table-msg");
+    msgEl.className = res.ok ? "msg success" : "msg error";
+    msgEl.textContent = res.ok ? `${name} נמחק` : (await res.json()).detail || "שגיאה";
+    msgEl.style.display = "block";
+    if (res.ok) loadUsers();
+    setTimeout(() => { msgEl.style.display = "none"; }, 4000);
+}
+
+// ── Drawer open/close ─────────────────────────────────────────────────────────
+document.getElementById("open-drawer-btn").addEventListener("click", () => {
+    document.getElementById("drawer-overlay").classList.add("open");
+});
+function closeDrawer() {
+    document.getElementById("drawer-overlay").classList.remove("open");
+    document.getElementById("drawer-msg").style.display = "none";
+}
+document.getElementById("close-drawer-btn").addEventListener("click", closeDrawer);
+document.getElementById("drawer-overlay").addEventListener("click", e => {
+    if (e.target === document.getElementById("drawer-overlay")) closeDrawer();
+});
+
+// ── Add user ──────────────────────────────────────────────────────────────────
+document.getElementById("add-user-btn").addEventListener("click", async () => {
+    const id_number  = document.getElementById("new-id").value.trim();
+    const full_name  = document.getElementById("new-name").value.trim();
+    const specialty  = document.getElementById("new-specialty").value.trim() || null;
+    const role       = document.getElementById("new-role").value;
+    const email      = document.getElementById("new-email").value.trim() || null;
+    const password   = document.getElementById("new-password").value;
+    const msgEl      = document.getElementById("drawer-msg");
+
+    const permissions = ["view_records","edit_records","prescribe","drug_interactions","clinical_analysis","session_summary"]
+        .filter(p => document.getElementById("perm-" + p).checked);
+
+    if (!id_number || !full_name || !password) {
+        msgEl.className = "msg error"; msgEl.textContent = "יש למלא ת.ז, שם מלא וסיסמה"; msgEl.style.display = "block"; return;
+    }
+    if (password.length < 6) {
+        msgEl.className = "msg error"; msgEl.textContent = "הסיסמה חייבת להכיל לפחות 6 תווים"; msgEl.style.display = "block"; return;
+    }
+
+    const res = await api("/admin/users", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({id_number, full_name, specialty, role, password, permissions, email}),
+    });
+    if (!res) return;
+
+    if (res.ok) {
+        msgEl.className = "msg success"; msgEl.textContent = `${full_name} נוסף בהצלחה`; msgEl.style.display = "block";
+        ["new-id","new-name","new-specialty","new-email","new-password"].forEach(id => document.getElementById(id).value = "");
+        document.getElementById("new-role").value = "doctor";
+        document.getElementById("new-role").dispatchEvent(new Event("change"));
+        loadUsers();
+        setTimeout(closeDrawer, 1800);
+    } else {
+        const err = await res.json();
+        msgEl.className = "msg error"; msgEl.textContent = err.detail || "שגיאה"; msgEl.style.display = "block";
+    }
+});
+
+// ── Logout ────────────────────────────────────────────────────────────────────
+document.getElementById("logout-btn").addEventListener("click", async () => {
+    await api("/auth/logout", {method:"POST"});
+    location.href = "/login";
+});
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+const ACTION_LABELS = {
+    login: "🔐 כניסה למערכת",
+    view_patient: "👁️ צפייה בתיק",
+    ingest: "📋 קליטת מסמך",
+    clinical_analysis: "🩺 ניתוח קליני",
+    drug_interactions: "⚠️ אינטראקציות",
+    session_summary: "📝 סיכום פגישה",
+};
+
+function showTab(tab) {
+    document.getElementById("tab-users").style.display = tab === "users" ? "" : "none";
+    document.getElementById("tab-audit").style.display = tab === "audit" ? "" : "none";
+    document.getElementById("tab-users-btn").className = tab === "users" ? "btn btn-primary" : "btn btn-outline";
+    document.getElementById("tab-audit-btn").className = tab === "audit" ? "btn btn-primary" : "btn btn-outline";
+    if (tab === "audit") loadAuditLog();
+}
+
+async function loadAuditLog() {
+    const tbody = document.getElementById("audit-tbody");
+    try {
+        const res = await fetch("/admin/audit-log");
+        if (!res.ok) throw new Error();
+        const rows = await res.json();
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:1.5rem">אין רשומות</td></tr>';
+            return;
+        }
+        tbody.innerHTML = rows.map(r => `
+            <tr>
+                <td style="white-space:nowrap;font-size:.8rem">${r.timestamp}</td>
+                <td>${r.user_name}</td>
+                <td>${ACTION_LABELS[r.action] || r.action}</td>
+                <td style="font-size:.82rem;color:var(--muted)">${r.patient_id}</td>
+            </tr>
+        `).join("");
+    } catch {
+        tbody.innerHTML = '<tr><td colspan="4" style="color:#c81e1e;text-align:center;padding:1rem">שגיאה בטעינה</td></tr>';
+    }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(async () => {
+    await loadMe();
+    await Promise.all([loadClinic(), loadUsers()]);
+})();
+
+// ── Neural background ─────────────────────────────────────────────────────────
+const canvas = document.getElementById("neural-bg");
+const ctx = canvas.getContext("2d");
+let W, H, nodes = [];
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+resize();
+window.addEventListener("resize", resize);
+for (let i = 0; i < 40; i++) nodes.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*2+1,pulse:Math.random()*Math.PI*2});
+function draw() {
+    ctx.clearRect(0,0,W,H);
+    for (let i=0;i<nodes.length;i++) for (let j=i+1;j<nodes.length;j++) {
+        const dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y,d=Math.sqrt(dx*dx+dy*dy);
+        if(d<150){ctx.beginPath();ctx.moveTo(nodes[i].x,nodes[i].y);ctx.lineTo(nodes[j].x,nodes[j].y);ctx.strokeStyle=`rgba(26,86,219,${(1-d/150)*.12})`;ctx.lineWidth=.7;ctx.stroke();}
+    }
+    nodes.forEach(n=>{n.pulse+=.02;const g=(Math.sin(n.pulse)+1)*.5;ctx.beginPath();ctx.arc(n.x,n.y,n.r+g*.4,0,Math.PI*2);ctx.fillStyle=`rgba(26,86,219,${.2+g*.2})`;ctx.fill();n.x+=n.vx;n.y+=n.vy;if(n.x<0||n.x>W)n.vx*=-1;if(n.y<0||n.y>H)n.vy*=-1;});
+    requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>
