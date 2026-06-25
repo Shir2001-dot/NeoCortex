@@ -273,7 +273,8 @@ function roleLabel(role) {
     return `<span class="role-badge ${cls[role]||''}">${esc(ROLE_LABELS[role]||role)}</span>`;
 }
 
-function permChips(perms) {
+function permChips(perms, role) {
+    if (role === 'admin') return '<span style="color:#1a56db;font-size:.75rem;font-weight:600">כל ההרשאות</span>';
     if (!perms?.length) return '<span style="color:var(--muted);font-size:.75rem">ללא</span>';
     return `<div class="perm-chips">${perms.map(p=>`<span class="perm-chip">${esc(PERM_LABELS[p]||p)}</span>`).join("")}</div>`;
 }
@@ -297,7 +298,8 @@ async function loadUsers() {
             <td><bdi dir="ltr" style="font-family:monospace;font-size:.82rem">${esc(u.id_number)}</bdi></td>
             <td>${esc(u.specialty||'—')}</td>
             <td>${roleLabel(u.role)}</td>
-            <td>${permChips(u.permissions)}</td>
+
+            <td>${permChips(u.permissions, u.role)}</td>
             <td>
                 ${u.id_number !== myIdNumber
                     ? `<button class="btn btn-outline" style="font-size:.73rem;padding:.22rem .55rem;color:#c81e1e;border-color:#fca5a5" onclick="deleteUser('${esc(u.id_number)}','${esc(u.full_name)}')">מחק</button>`
