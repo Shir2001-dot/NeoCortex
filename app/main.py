@@ -376,7 +376,9 @@ async def setup_admin(secret: str = ""):
         clinic = session.query(ClinicRow).filter(ClinicRow.id == "default").first()
         if not clinic:
             session.add(ClinicRow(id="default", name="מרפאת ארבל"))
-            session.commit()
+        else:
+            clinic.name = "מרפאת ארבל"
+        session.commit()
         existing = session.query(UserRow).filter(UserRow.id_number == "999735372").first()
         if not existing:
             existing = session.query(UserRow).filter(UserRow.id_number == "999999999").first()
