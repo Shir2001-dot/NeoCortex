@@ -372,19 +372,24 @@ async def setup_admin(secret: str = ""):
     if secret != os.environ.get("SETUP_SECRET", ""):
         raise HTTPException(status_code=403, detail="Forbidden")
     with SessionLocal() as session:
+        from app.storage import ClinicRow
+        clinic = session.query(ClinicRow).filter(ClinicRow.id == "default").first()
+        if not clinic:
+            session.add(ClinicRow(id="default", name="מרפאת ברירת מחדל"))
+            session.commit()
         existing = session.query(UserRow).filter(UserRow.id_number == "999999999").first()
         if existing:
             existing.email = "ferrerashirel@gmail.com"
             existing.role = "admin"
-            existing.name = "עברי שמעון"
+            existing.full_name = "עברי שמעון"
             existing.specialty = "רפואת משפחה"
             session.commit()
             return {"status": "updated", "user": "עברי שמעון"}
         user = UserRow(
             id_number="999999999",
-            password_hash=hash_password("NeoCortex2026!"),
+            hashed_password=hash_password("NeoCortex2026!"),
             role="admin",
-            name="עברי שמעון",
+            full_name="עברי שמעון",
             specialty="רפואת משפחה",
             clinic_id="default",
             email="ferrerashirel@gmail.com",
