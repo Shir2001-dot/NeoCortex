@@ -213,6 +213,62 @@ def seed_demo_data(session) -> None:
         permissions=json.dumps(ROLE_DEFAULT_PERMISSIONS["secretary"]),
     ))
 
+    # Demo patient
+    demo_patient_id = "555555555"
+    existing_master = session.query(PatientMasterRow).filter_by(patient_id=demo_patient_id).first()
+    if not existing_master:
+        import uuid as _uuid
+        internal_id = str(_uuid.uuid4())
+        record = PatientRecord(
+            patient_id=demo_patient_id,
+            internal_id=internal_id,
+            full_name="דוד לוי",
+            date_of_birth="1968-03-15",
+            gender="זכר",
+            chief_complaint="חרדה מוגברת, קשיי שינה, ודיכאון מתמשך",
+            symptoms=["חרדה", "נדודי שינה", "מצב רוח ירוד", "עייפות", "קשיי ריכוז"],
+            medical_history=[
+                {"name": "הפרעת חרדה מוכללת", "active": True, "onset_date": "2018-01-01"},
+                {"name": "דיכאון מז'ורי", "active": True, "onset_date": "2019-06-01"},
+                {"name": "יתר לחץ דם", "active": True, "onset_date": "2020-03-01"},
+            ],
+            medications=[
+                "קלונקס (קלונאזפאם) 0.5 מ\"ג - פעמיים ביום",
+                "ציפרלקס (אסציטאלופרם) 20 מ\"ג - פעם ביום",
+                "אנאפריל (פרופרנולול) 40 מ\"ג - פעמיים ביום",
+                "זולפידם 10 מ\"ג - לפני שינה",
+            ],
+            allergies=["פניצילין"],
+            lab_results=[
+                {"name": "TSH", "value": "2.1", "unit": "mIU/L", "reference_range": "0.4-4.0", "flag": None},
+                {"name": "סוכר בצום", "value": "98", "unit": "mg/dL", "reference_range": "70-100", "flag": None},
+                {"name": "נתרן", "value": "138", "unit": "mEq/L", "reference_range": "136-145", "flag": None},
+            ],
+            vitals={"heart_rate": 88, "blood_pressure_systolic": 142, "blood_pressure_diastolic": 91, "temperature_celsius": 36.7, "respiratory_rate": 16, "spo2_percent": 98},
+            referral_reason="המשך מעקב פסיכיאטרי. המטופל מדווח על החמרה בחרדה בחודש האחרון. נדרשת הערכת תרופות.",
+            referral_date="2026-06-20",
+            source="text",
+            raw_text="מטופל דוד לוי, יליד 15.3.1968. מעקב פסיכיאטרי.",
+        )
+        master = PatientMaster(
+            patient_id=demo_patient_id,
+            full_name="דוד לוי",
+            date_of_birth="1968-03-15",
+            gender="זכר",
+            transactions=[],
+        )
+        session.add(PatientMasterRow(
+            patient_id=demo_patient_id,
+            clinic_id="clinic-demo",
+            data=_encrypt(master.model_dump_json()),
+        ))
+        session.add(PatientRecordRow(
+            internal_id=internal_id,
+            patient_id=demo_patient_id,
+            clinic_id="clinic-demo",
+            data=_encrypt(record.model_dump_json()),
+        ))
+
     session.commit()
 
 
