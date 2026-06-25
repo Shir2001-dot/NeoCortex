@@ -404,6 +404,10 @@ async def setup_admin(secret: str = ""):
         session.query(PatientRecordRow).filter_by(clinic_id="clinic-demo").update({"clinic_id": "default"})
         session.commit()
 
+        # Move all clinic-demo users to default clinic
+        session.query(UserRow).filter_by(clinic_id="clinic-demo").update({"clinic_id": "default"})
+        session.commit()
+
         existing = session.query(UserRow).filter(UserRow.id_number == "999735372").first()
         if not existing:
             existing = session.query(UserRow).filter(UserRow.id_number == "999999999").first()
