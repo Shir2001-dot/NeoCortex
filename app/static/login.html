@@ -9,25 +9,58 @@
         body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
         .login-box {
             background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,.12);
-            padding: 2.5rem 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,.08), 0 16px 56px rgba(15,38,82,.14), 0 0 0 1px rgba(226,232,240,.8);
+            padding: 2.75rem 2.25rem 2rem;
             width: 100%;
-            max-width: 380px;
-            border: 1px solid var(--border);
+            max-width: 390px;
+            position: relative;
+            z-index: 1;
         }
-        .login-logo {
-            text-align: center;
-            margin-bottom: 2rem;
+        .login-logo { text-align:center; margin-bottom:2rem; }
+        .login-logo .logo-neo {
+            font-size: 2rem;
+            font-weight: 900;
+            letter-spacing: 5px;
+            color: #0f2652;
+            text-shadow: 0 2px 8px rgba(15,38,82,.18);
         }
-        .login-logo .logo-neo { font-size:1.8rem; font-weight:900; letter-spacing:4px; color:#1a56db; }
-        .login-logo .logo-cortex { font-size:1.8rem; font-weight:300; letter-spacing:4px; color:#4b9fdb; }
-        .login-logo .logo-sub { font-size:.78rem; color:var(--muted); margin-top:.25rem; }
-        .login-box h2 { font-size:1rem; font-weight:700; margin-bottom:1.25rem; color:var(--text); }
+        .login-logo .logo-cortex {
+            font-size: 2rem;
+            font-weight: 200;
+            letter-spacing: 5px;
+            color: #1a56db;
+        }
+        .login-logo .logo-sub {
+            font-size: .73rem;
+            color: var(--muted);
+            margin-top: .4rem;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+        .login-box h2 { font-size:.95rem; font-weight:700; margin-bottom:1.25rem; color:var(--text); }
         .form-group { margin-bottom:1rem; }
-        .form-group label { display:block; font-size:.8rem; font-weight:600; color:var(--text-secondary); margin-bottom:.3rem; }
-        .error-msg { background:#fef2f2; border:1px solid #fca5a5; color:#c81e1e; border-radius:8px; padding:.6rem .9rem; font-size:.85rem; margin-bottom:1rem; }
-        .login-footer { text-align:center; font-size:.75rem; color:var(--muted); margin-top:1.5rem; }
+        .form-group label {
+            display:block;
+            font-size:.73rem;
+            font-weight:700;
+            color:var(--text-secondary);
+            margin-bottom:.3rem;
+            text-transform:uppercase;
+            letter-spacing:0.5px;
+        }
+        .error-msg {
+            background:#fef2f2;
+            border:1px solid #fca5a5;
+            border-right:3px solid #dc2626;
+            color:#c81e1e;
+            border-radius:8px;
+            padding:.6rem .9rem;
+            font-size:.85rem;
+            margin-bottom:1rem;
+        }
+        .login-footer { text-align:center; font-size:.72rem; color:var(--muted); margin-top:1.5rem; letter-spacing:.3px; }
+        @media (max-width:430px) { .login-box { margin:1rem; border-radius:12px; padding:2rem 1.5rem; } }
     </style>
 </head>
 <body>
