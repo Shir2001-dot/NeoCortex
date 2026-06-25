@@ -93,6 +93,7 @@ class PatientMasterRow(Base):
     full_name = Column(String, nullable=True)
     date_of_birth = Column(String, nullable=True)
     gender = Column(String, nullable=True)
+    clinic_id = Column(String, nullable=True)
 
 
 class PatientTransactionRow(Base):
@@ -175,10 +176,10 @@ def seed_demo_data(session) -> None:
     if session.get(UserRow, "000000000"):
         return
 
-    # Create demo clinic
-    clinic = session.get(ClinicRow, "clinic-demo")
+    # Create default clinic
+    clinic = session.get(ClinicRow, "default")
     if not clinic:
-        session.add(ClinicRow(id="clinic-demo", name="קליניקת הדגמה"))
+        session.add(ClinicRow(id="default", name="מרפאת NeoCortex"))
 
     # Admin
     session.add(UserRow(
