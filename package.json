@@ -1,0 +1,24 @@
+{
+  "name": "neocortex",
+  "version": "1.0.0",
+  "description": "נאוקורטקס דיגיטלי לקבלת החלטות קליניות אוטונומיות, המעלים את העומס הקוגניטיבי על הצוותים הרפואיים.",
+  "type": "module",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:41729/git/Shir2001-dot/NeoCortex"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "node-fetch": "^3.3.2"
+  }
+}
