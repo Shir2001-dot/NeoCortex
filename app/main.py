@@ -379,6 +379,8 @@ async def setup_admin(secret: str = ""):
         else:
             clinic.name = "מרפאת ארבל"
         session.commit()
+        # Move all clinic-demo users to default clinic
+        session.query(UserRow).filter_by(clinic_id="clinic-demo").update({"clinic_id": "default"})
         # Move demo patient to default clinic
         from app.storage import PatientMasterRow, PatientRecordRow
         session.query(PatientMasterRow).filter_by(clinic_id="clinic-demo").update({"clinic_id": "default"})
