@@ -413,21 +413,12 @@ vitalsBtn.addEventListener("click", async () => {
     }
 });
 
-// ─── Voice Recording ───
-let recognition = null;
+// ─── Voice Recording (Whisper) ───
+let mediaRecorder = null;
+let audioChunks = [];
 let isRecording = false;
 
-function initSpeechRecognition() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return null;
-    const r = new SpeechRecognition();
-    r.lang = "he-IL";
-    r.continuous = true;
-    r.interimResults = true;
-    return r;
-}
-
-function setMicState(recording) {
+function setMicState(recording, statusText) {
     isRecording = recording;
     const btn = document.getElementById("mic-btn");
     const lbl = document.getElementById("mic-label");
@@ -436,56 +427,56 @@ function setMicState(recording) {
         btn.style.borderColor = "#dc2626";
         btn.style.color = "#dc2626";
         btn.style.background = "#fef2f2";
-        lbl.textContent = "עצור";
+        lbl.textContent = "עצור הקלטה";
         status.textContent = "🔴 מקליט... דבר בעברית";
     } else {
         btn.style.borderColor = "";
         btn.style.color = "";
         btn.style.background = "";
         lbl.textContent = "הקלט";
-        status.textContent = "";
+        status.textContent = statusText || "";
     }
 }
 
-document.getElementById("mic-btn").addEventListener("click", () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        document.getElementById("mic-status").textContent = "הדפדפן לא תומך בהקלטה קולית. השתמש ב-Chrome.";
+document.getElementById("mic-btn").addEventListener("click", async () => {
+    if (isRecording && mediaRecorder) {
+        mediaRecorder.stop();
         return;
     }
 
-    if (isRecording && recognition) {
-        recognition.stop();
-        return;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+
+        mediaRecorder.onstop = async () => {
+            stream.getTracks().forEach(t => t.stop());
+            setMicState(false, "⏳ מתמלל עם Whisper...");
+            const blob = new Blob(audioChunks, { type: "audio/webm" });
+            const formData = new FormData();
+            formData.append("file", blob, "recording.webm");
+            try {
+                const res = await fetch("/transcribe", {
+                    method: "POST", body: formData, credentials: "include"
+                });
+                if (!res.ok) throw new Error(`שגיאת שרת (${res.status})`);
+                const data = await res.json();
+                const notesEl = document.getElementById("summary-notes");
+                notesEl.value += (notesEl.value ? "\n" : "") + data.text;
+                setMicState(false, "✓ תמלול הושלם");
+                setTimeout(() => { document.getElementById("mic-status").textContent = ""; }, 3000);
+            } catch(e) {
+                setMicState(false, `שגיאת תמלול: ${e.message}`);
+            }
+        };
+
+        mediaRecorder.start();
+        setMicState(true);
+    } catch(e) {
+        document.getElementById("mic-status").textContent = "לא ניתן לגשת למיקרופון. אשר גישה בדפדפן.";
     }
-
-    recognition = initSpeechRecognition();
-    const notesEl = document.getElementById("summary-notes");
-    let interim = "";
-
-    recognition.onresult = (e) => {
-        let finalChunk = "";
-        interim = "";
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-            if (e.results[i].isFinal) finalChunk += e.results[i][0].transcript;
-            else interim += e.results[i][0].transcript;
-        }
-        if (finalChunk) {
-            notesEl.value += (notesEl.value ? " " : "") + finalChunk;
-        }
-        document.getElementById("mic-status").textContent = interim
-            ? `🔴 מקליט... ${interim}`
-            : "🔴 מקליט... דבר בעברית";
-    };
-
-    recognition.onend = () => setMicState(false);
-    recognition.onerror = (e) => {
-        setMicState(false);
-        document.getElementById("mic-status").textContent = `שגיאת הקלטה: ${e.error}`;
-    };
-
-    recognition.start();
-    setMicState(true);
 });
 
 // ─── Session Summary Panel ───

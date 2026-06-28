@@ -1084,6 +1084,27 @@ async def delete_reminder_endpoint(internal_id: str, reminder_id: str, user: dic
     return delete_reminder(patient_id, reminder_id)
 
 
+@app.post("/transcribe")
+async def transcribe_audio(file: UploadFile, user: dict = Depends(get_current_user)):
+    openai_key = os.environ.get("OPENAI_API_KEY", "")
+    if not openai_key:
+        raise HTTPException(status_code=503, detail="OPENAI_API_KEY not configured")
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=openai_key)
+        audio_data = await file.read()
+        audio_buf = io.BytesIO(audio_data)
+        audio_buf.name = file.filename or "recording.webm"
+        result = client.audio.transcriptions.create(
+            model="whisper-1",
+            file=audio_buf,
+            language="he",
+        )
+        return {"text": result.text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+
+
 @app.get("/clinic/reminders")
 async def clinic_reminders(user: dict = Depends(get_current_user)) -> list[dict]:
     clinic_id = user.get("clinic_id", "default")
